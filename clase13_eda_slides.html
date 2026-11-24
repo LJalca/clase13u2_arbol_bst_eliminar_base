@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EDA • Sesión 13: Eliminación en BST, Degradación y Balanceo</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Fira+Code:wght@500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .font-mono { font-family: 'Fira Code', monospace; }
+    .slide { display: none; opacity: 0; transition: opacity 0.25s ease-in-out; width: 100%; max-width: 1440px; min-height: calc(100vh - 122px); }
+    .slide.active { display: flex; opacity: 1; }
+    .slide p, .slide li { line-height: 1.55; }
+    .slide pre { font-size: 0.98rem; line-height: 1.55; }
+    @media (min-width: 1280px) {
+      .slide pre { font-size: 1.06rem; line-height: 1.6; }
+    }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #06b6d4; }
+    .code-box { background: #090d16; border: 1px solid #1e293b; border-radius: 1rem; color: #e2e8f0; }
+    .tree-node { cursor: pointer; transition: all 0.2s ease; }
+    .tree-node:hover circle { stroke: #fbbf24; stroke-width: 3; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 h-screen flex flex-col justify-between overflow-hidden select-none">
+
+  <header class="bg-slate-900/95 border-b border-slate-800 px-6 py-2.5 flex items-center justify-between text-sm z-30 shrink-0">
+    <div class="flex items-center space-x-3">
+      <span class="font-extrabold text-cyan-400 bg-cyan-950/90 border border-cyan-700/60 px-3 py-1 rounded-lg text-sm flex items-center space-x-1.5">
+        <span>🌳</span>
+        <span>ESPAM MFL • EDA (CDS-0202)</span>
+      </span>
+      <span class="hidden md:inline text-slate-300 text-sm font-semibold">
+        Unidad 2 • Sesión 13 (24/11/2026): Eliminación en BST (3 Casos), Degradación y Balanceo
+      </span>
+    </div>
+    <div class="flex items-center space-x-2 sm:space-x-3">
+      <div class="hidden md:flex items-center space-x-2 w-32 sm:w-44">
+        <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden border border-slate-700">
+          <div id="slide-progress" class="bg-gradient-to-r from-cyan-500 to-blue-500 h-full transition-all duration-300" style="width: 4%;"></div>
+        </div>
+      </div>
+      <span id="slide-indicator" class="font-mono font-bold text-cyan-300 bg-slate-800 px-3 py-1 rounded-md border border-slate-700">01 / 26</span>
+      <button onclick="toggleFullscreen()" title="Pantalla Completa" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1 rounded-md border border-slate-700 transition font-bold">⛶</button>
+    </div>
+  </header>
+
+  <main class="flex-1 min-h-0 flex items-center justify-center px-5 py-3 sm:px-8 sm:py-4 relative overflow-y-auto">
+
+    <!-- SLIDE 1: PORTADA -->
+    <section class="slide active w-full max-w-[1440px] h-full flex-col justify-center items-center text-center p-8 sm:p-12 bg-gradient-to-br from-slate-900 via-slate-950 to-cyan-950/30 rounded-3xl border border-slate-800 shadow-2xl space-y-6">
+      <div class="inline-flex items-center space-x-2 px-5 py-2 rounded-full bg-cyan-950/80 border border-cyan-700/60 text-cyan-300 text-sm font-bold uppercase tracking-wider">
+        <span>Carrera de Desarrollo de Software</span><span>•</span><span>Unidad 2 • Sesión 13</span>
+      </div>
+      <h1 class="text-4xl sm:text-6xl font-black text-white leading-tight max-w-5xl">
+        Eliminación Avanzada en <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-sky-300">BST</span>, Degradación y Balanceo
+      </h1>
+      <p class="text-slate-300 text-lg sm:text-2xl max-w-4xl leading-relaxed">
+        Los 3 casos de borrado (hoja, un hijo y dos hijos con Sucesor Inorden), reconexión de enlaces, análisis de degradación e introducción al balanceo en Java.
+      </p>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full max-w-5xl pt-6 text-base">
+        <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl">
+          <div class="text-cyan-400 font-bold uppercase text-xs mb-1">Fecha y Horario</div>
+          <div class="text-white font-extrabold text-lg">Martes, 24 Nov 2026</div>
+          <div class="text-slate-400">17:00 – 20:00 (3h en aula)</div>
+        </div>
+        <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl">
+          <div class="text-sky-400 font-bold uppercase text-xs mb-1">Carga Horaria SGA</div>
+          <div class="text-white font-extrabold text-lg">5.0 Horas Totales</div>
+          <div class="text-slate-400">2h AD + 1h TA + 2h AP</div>
+        </div>
+        <div class="bg-slate-900/90 border border-slate-800 p-4 rounded-2xl">
+          <div class="text-emerald-400 font-bold uppercase text-xs mb-1">Docente</div>
+          <div class="text-white font-extrabold text-lg">Ing. Luiggi Jalca, MSc.</div>
+          <div class="text-slate-400">ABP • Práctica Guiada</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: AGENDA DE LAS 3 HORAS -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-6 sm:p-9 bg-slate-950">
+      <div class="border-b border-slate-800 pb-3">
+        <span class="text-sm font-bold uppercase tracking-wider text-cyan-400">Ruta de Aprendizaje • Sesión 13 (3 Horas Sincrónicas)</span>
+        <h2 class="text-3xl sm:text-4xl font-black text-white">Agenda, Objetivos y Distribución SGA</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-auto text-base sm:text-lg">
+        <div class="space-y-3">
+          <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-start space-x-3">
+            <span class="w-9 h-9 rounded-xl bg-cyan-950 border border-cyan-700 text-cyan-400 font-black flex items-center justify-center shrink-0">1</span>
+            <div><h3 class="font-bold text-white">AD (17:00 – 18:10) • Los 3 Casos de Eliminación</h3><p class="text-slate-300 text-sm">Hoja, un hijo y dos hijos con Sucesor Inorden + 2 simuladores SVG interactivos.</p></div>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-start space-x-3">
+            <span class="w-9 h-9 rounded-xl bg-sky-950 border border-sky-700 text-sky-400 font-black flex items-center justify-center shrink-0">2</span>
+            <div><h3 class="font-bold text-white">AD/TA (18:10 – 18:45) • Degradación, Balanceo y Estudio TA</h3><p class="text-slate-300 text-sm">Factor de equilibrio, rotación simple y guía de reconexión de enlaces.</p></div>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-start space-x-3">
+            <span class="w-9 h-9 rounded-xl bg-emerald-950 border border-emerald-700 text-emerald-400 font-black flex items-center justify-center shrink-0">3</span>
+            <div><h3 class="font-bold text-white">AP (18:45 – 19:40) • Codificación Guiada en IDE</h3><p class="text-slate-300 text-sm">Implementar <code class="text-emerald-300">eliminar()</code>, <code class="text-emerald-300">encontrarMinimo()</code> y <code class="text-emerald-300">estaBalanceado()</code> en <code class="text-white">ArbolBST</code>.</p></div>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-start space-x-3">
+            <span class="w-9 h-9 rounded-xl bg-purple-950 border border-purple-700 text-purple-400 font-black flex items-center justify-center shrink-0">4</span>
+            <div><h3 class="font-bold text-white">Cierre (19:40 – 20:00) • Test Interactivo</h3><p class="text-slate-300 text-sm">Evaluación formativa de 20 preguntas (15 de Sesión 13 + 5 del Glosario Clases 1–12).</p></div>
+          </div>
+        </div>
+        <div class="p-6 rounded-2xl bg-gradient-to-br from-cyan-950/40 to-slate-900 border border-cyan-800/50 flex flex-col justify-between space-y-4">
+          <div>
+            <span class="text-sm font-extrabold uppercase text-cyan-400">Objetivo de la Sesión</span>
+            <h3 class="text-2xl font-black text-white mt-1 mb-2">¿Qué lograrás hoy?</h3>
+            <p class="text-slate-200 text-base leading-relaxed">
+              Reforzar el <strong>Glosario Técnico (25 términos de Clases 1–12)</strong>, dominar la eliminación segura de cualquier nodo en un <strong>Árbol Binario de Búsqueda (BST)</strong>, comprender su degradación y codificar <code class="text-cyan-300">eliminar()</code> en Java.
+            </p>
+          </div>
+          <div class="p-4 rounded-xl bg-slate-950/80 border border-slate-800 text-sm space-y-1.5">
+            <div class="font-bold text-cyan-300">Planificación SGA (5.0h):</div>
+            <div class="text-slate-200">• <strong>2.0h AD:</strong> Los 3 casos de eliminación en un BST e introducción al balanceo.</div>
+            <div class="text-slate-200">• <strong>1.0h TA:</strong> Estudio de reconexión al eliminar nodos con dos hijos.</div>
+            <div class="text-slate-200">• <strong>2.0h AP:</strong> Codificación guiada en el IDE del método <code class="text-white">eliminar()</code>.</div>
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>Carrera de Desarrollo de Software • ESPAM MFL</span><span class="text-cyan-400 font-bold">Glosario Técnico (25 Términos) ➔</span></div>
+    </section>
+
+    <!-- SLIDE 3 (NEW): GLOSARIO TÉCNICO PARTE 1 - UNIDAD 1 (TÉRMINOS 1 A 13) -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-5 sm:p-8 bg-slate-950">
+      <div class="border-b border-slate-800 pb-2.5 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <span class="text-sm font-bold uppercase tracking-wider text-cyan-400">Glosario Técnico de Repaso • Clases 1 a 8 (Unidad 1)</span>
+          <h2 class="text-2xl sm:text-3xl font-black text-white">Vocabulario Base: Estructuras Lineales (1 al 13)</h2>
+        </div>
+        <span class="text-xs sm:text-sm bg-cyan-950 border border-cyan-700 text-cyan-300 px-3 py-1 rounded-lg font-bold">Haz clic en cualquier término para destacarlo</span>
+      </div>
+
+      <div id="glos-focus-u1" class="my-2 p-3.5 rounded-2xl bg-cyan-950/40 border border-cyan-700/70 text-base text-slate-100 flex flex-wrap items-center gap-2">
+        <span class="font-mono font-black text-cyan-300 text-lg">TDA (Tipo de Dato Abstracto):</span>
+        <span>Modelo lógico que define qué datos guarda una estructura y qué operaciones permite, sin depender de su programación interna.</span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 my-auto text-sm">
+        <button onclick="focusGlossary('u1','1. TDA (Tipo de Dato Abstracto)','Modelo lógico que define qué datos guarda una estructura y qué operaciones permite, sin depender de cómo esté programada internamente.')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500 transition">
+          <div class="font-mono font-bold text-cyan-400">1. TDA</div>
+          <div class="text-slate-300 text-xs mt-0.5">Modelo lógico de datos y operaciones independiente del código interno.</div>
+        </button>
+        <button onclick="focusGlossary('u1','2. Array (Arreglo Estático)','Colección de elementos del mismo tipo con tamaño fijo y acceso directo mediante un índice numérico (0, 1, 2...).')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500 transition">
+          <div class="font-mono font-bold text-cyan-400">2. Array</div>
+          <div class="text-slate-300 text-xs mt-0.5">Arreglo de tamaño fijo con acceso instantáneo por índice numérico.</div>
+        </button>
+        <button onclick="focusGlossary('u1','3. Nodo','Unidad básica de una estructura dinámica que almacena un dato y uno o más enlaces hacia otros nodos.')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500 transition">
+          <div class="font-mono font-bold text-cyan-400">3. Nodo</div>
+          <div class="text-slate-300 text-xs mt-0.5">Bloque que guarda un dato y enlaces hacia otros nodos.</div>
+        </button>
+        <button onclick="focusGlossary('u1','4. Puntero / Referencia','Enlace que conecta un nodo con otro (por ejemplo siguiente, anterior, izquierdo o derecho).')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500 transition">
+          <div class="font-mono font-bold text-cyan-400">4. Puntero / Referencia</div>
+          <div class="text-slate-300 text-xs mt-0.5">Enlace que conecta un nodo con el siguiente, anterior o hijos.</div>
+        </button>
+        <button onclick="focusGlossary('u1','5. null','Valor especial en Java que indica que una referencia o enlace está vacío y no apunta a ningún nodo.')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500 transition">
+          <div class="font-mono font-bold text-amber-300">5. null</div>
+          <div class="text-slate-300 text-xs mt-0.5">Valor que indica enlace vacío o fin de una rama/lista.</div>
+        </button>
+        <button onclick="focusGlossary('u1','6. Lista Enlazada Simple','Secuencia lineal y dinámica de nodos donde cada uno apunta únicamente al siguiente hasta terminar en null.')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500 transition">
+          <div class="font-mono font-bold text-sky-400">6. Lista Enlazada Simple</div>
+          <div class="text-slate-300 text-xs mt-0.5">Cadena dinámica de nodos conectados solo hacia adelante.</div>
+        </button>
+        <button onclick="focusGlossary('u1','7. Lista Doblemente Enlazada','Lista dinámica donde cada nodo tiene dos enlaces (anterior y siguiente), permitiendo avanzar y retroceder.')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500 transition">
+          <div class="font-mono font-bold text-sky-400">7. Lista Doble</div>
+          <div class="text-slate-300 text-xs mt-0.5">Nodos con doble enlace (anterior y siguiente) para ir en dos sentidos.</div>
+        </button>
+        <button onclick="focusGlossary('u1','8. LIFO (Last-In, First-Out)','Regla de ordenamiento donde el último elemento en entrar es el primero en salir (propia de las pilas).')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500 transition">
+          <div class="font-mono font-bold text-emerald-400">8. LIFO</div>
+          <div class="text-slate-300 text-xs mt-0.5">Último en entrar, primero en salir (principio de las pilas).</div>
+        </button>
+        <button onclick="focusGlossary('u1','9. Stack (Pila)','Estructura lineal basada en LIFO donde se inserta y retira únicamente por el extremo superior llamado tope.')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500 transition">
+          <div class="font-mono font-bold text-emerald-400">9. Stack (Pila)</div>
+          <div class="text-slate-300 text-xs mt-0.5">Estructura LIFO con operaciones concentradas en el tope.</div>
+        </button>
+        <button onclick="focusGlossary('u1','10. Push / Pop / Peek','Operaciones básicas de una pila: push inserta en el tope, pop retira el tope y peek consulta sin retirar.')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500 transition">
+          <div class="font-mono font-bold text-emerald-400">10. Push / Pop / Peek</div>
+          <div class="text-slate-300 text-xs mt-0.5">Apilar, desapilar y observar el elemento superior de la pila.</div>
+        </button>
+        <button onclick="focusGlossary('u1','11. FIFO (First-In, First-Out)','Regla de ordenamiento donde el primer elemento en llegar es el primero en ser atendido (propia de las colas).')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500 transition">
+          <div class="font-mono font-bold text-purple-400">11. FIFO</div>
+          <div class="text-slate-300 text-xs mt-0.5">Primero en entrar, primero en salir (principio de las colas).</div>
+        </button>
+        <button onclick="focusGlossary('u1','12. Queue (Cola)','Estructura lineal regida por FIFO que encola por el final (enqueue) y desencola por el frente (dequeue).')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500 transition">
+          <div class="font-mono font-bold text-purple-400">12. Queue (Cola)</div>
+          <div class="text-slate-300 text-xs mt-0.5">Estructura FIFO: entra por el final (enqueue) y sale por el frente (dequeue).</div>
+        </button>
+        <button onclick="focusGlossary('u1','13. Cola Circular','Cola sobre un arreglo fijo donde el índice final regresa al inicio al llegar al tope, aprovechando espacios liberados.')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500 transition lg:col-span-2">
+          <div class="font-mono font-bold text-purple-400">13. Cola Circular</div>
+          <div class="text-slate-300 text-xs mt-0.5">Cola en arreglo fijo que reutiliza las posiciones libres volviendo al índice 0.</div>
+        </button>
+      </div>
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>Repaso acumulado: Unidad 1 (Clases 1–8)</span><span class="text-cyan-400 font-bold">Glosario Parte 2 (14 al 25) ➔</span></div>
+    </section>
+
+    <!-- SLIDE 4 (NEW): GLOSARIO TÉCNICO PARTE 2 - UNIDAD 2 (TÉRMINOS 14 A 25) -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-5 sm:p-8 bg-slate-950">
+      <div class="border-b border-slate-800 pb-2.5 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <span class="text-sm font-bold uppercase tracking-wider text-sky-400">Glosario Técnico de Repaso • Clases 9 a 12 (Unidad 2)</span>
+          <h2 class="text-2xl sm:text-3xl font-black text-white">Vocabulario Base: Grafos y Árboles (14 al 25)</h2>
+        </div>
+        <span class="text-xs sm:text-sm bg-sky-950 border border-sky-700 text-sky-300 px-3 py-1 rounded-lg font-bold">Haz clic en cualquier término para destacarlo</span>
+      </div>
+
+      <div id="glos-focus-u2" class="my-2 p-3.5 rounded-2xl bg-sky-950/40 border border-sky-700/70 text-base text-slate-100 flex flex-wrap items-center gap-2">
+        <span class="font-mono font-black text-sky-300 text-lg">BST (Binary Search Tree):</span>
+        <span>Árbol Binario de Búsqueda que cumple siempre la propiedad: subárbol izquierdo menor que la raíz y subárbol derecho mayor.</span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 my-auto text-sm">
+        <button onclick="focusGlossary('u2','14. Grafo','Estructura no lineal compuesta por vértices conectados mediante aristas, donde pueden existir múltiples caminos y ciclos.')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500 transition">
+          <div class="font-mono font-bold text-sky-400">14. Grafo</div>
+          <div class="text-slate-300 text-xs mt-0.5">Red no lineal de entidades conectadas que puede contener ciclos.</div>
+        </button>
+        <button onclick="focusGlossary('u2','15. Vértice y Arista','Componentes esenciales de un grafo: el vértice representa un punto o entidad y la arista representa la conexión entre dos vértices.')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500 transition">
+          <div class="font-mono font-bold text-sky-400">15. Vértice y Arista</div>
+          <div class="text-slate-300 text-xs mt-0.5">Nodos (vértices) y enlaces que los unen (aristas) en un grafo.</div>
+        </button>
+        <button onclick="focusGlossary('u2','16. Grafo Ponderado','Grafo cuyas aristas tienen un peso o valor numérico asociado, como distancia en kilómetros, tiempo o costo.')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500 transition">
+          <div class="font-mono font-bold text-sky-400">16. Grafo Ponderado</div>
+          <div class="text-slate-300 text-xs mt-0.5">Grafo donde cada conexión tiene un peso o costo numérico.</div>
+        </button>
+        <button onclick="focusGlossary('u2','17. Matriz de Adyacencia','Tabla bidimensional V × V que registra con 1/peso o 0 si existe conexión directa entre cada par de vértices.')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500 transition">
+          <div class="font-mono font-bold text-cyan-400">17. Matriz de Adyacencia</div>
+          <div class="text-slate-300 text-xs mt-0.5">Tabla V × V que marca qué pares de vértices están conectados.</div>
+        </button>
+        <button onclick="focusGlossary('u2','18. Lista de Adyacencia','Representación de un grafo donde cada vértice guarda únicamente la lista de sus vecinos conectados directamente.')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500 transition">
+          <div class="font-mono font-bold text-cyan-400">18. Lista de Adyacencia</div>
+          <div class="text-slate-300 text-xs mt-0.5">Cada vértice almacena solo la lista de sus vecinos reales.</div>
+        </button>
+        <button onclick="focusGlossary('u2','19. BFS (Breadth-First Search)','Recorrido en amplitud que explora todos los vecinos cercanos nivel por nivel apoyándose en una Cola (FIFO).')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500 transition">
+          <div class="font-mono font-bold text-amber-300">19. BFS</div>
+          <div class="text-slate-300 text-xs mt-0.5">Búsqueda en amplitud por niveles usando una Cola (FIFO).</div>
+        </button>
+        <button onclick="focusGlossary('u2','20. DFS (Depth-First Search)','Recorrido en profundidad que avanza por una rama hasta el final antes de retroceder a explorar otras rutas.')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500 transition">
+          <div class="font-mono font-bold text-amber-300">20. DFS</div>
+          <div class="text-slate-300 text-xs mt-0.5">Búsqueda en profundidad que recorre cada rama hasta el fondo.</div>
+        </button>
+        <button onclick="focusGlossary('u2','21. Árbol Binario','Estructura jerárquica sin ciclos con una única raíz donde cada nodo tiene como máximo dos hijos (izquierdo y derecho).')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500 transition">
+          <div class="font-mono font-bold text-emerald-400">21. Árbol Binario</div>
+          <div class="text-slate-300 text-xs mt-0.5">Jerarquía sin ciclos con raíz única y hasta dos hijos por nodo.</div>
+        </button>
+        <button onclick="focusGlossary('u2','22. Raíz y Hoja (Root / Leaf)','La raíz es el único nodo superior sin padre; la hoja es un nodo terminal que no tiene hijos (ambos enlaces en null).')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500 transition">
+          <div class="font-mono font-bold text-emerald-400">22. Raíz y Hoja</div>
+          <div class="text-slate-300 text-xs mt-0.5">Raíz: cima sin padre • Hoja: nodo final sin descendientes.</div>
+        </button>
+        <button onclick="focusGlossary('u2','23. Preorden / Inorden / Postorden','Los tres recorridos recursivos de árboles binarios según cuándo se visita la raíz: primero (R-I-D), en medio (I-R-D) o al final (I-D-R).')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500 transition">
+          <div class="font-mono font-bold text-emerald-400">23. Pre / In / Postorden</div>
+          <div class="text-slate-300 text-xs mt-0.5">Órdenes de visita recursiva (R-I-D, I-R-D, I-D-R).</div>
+        </button>
+        <button onclick="focusGlossary('u2','24. BST (Binary Search Tree)','Árbol Binario de Búsqueda que ordena claves: todo el subárbol izquierdo es menor que la raíz y todo el derecho es mayor.')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500 transition">
+          <div class="font-mono font-bold text-cyan-300">24. BST</div>
+          <div class="text-slate-300 text-xs mt-0.5">Árbol Binario de Búsqueda ordenado (izquierdo &lt; raíz &lt; derecho).</div>
+        </button>
+        <button onclick="focusGlossary('u2','25. Búsqueda Dicotómica O(log n)','Técnica que descarta la mitad del árbol en cada comparación al elegir solo la rama izquierda o la derecha.')" class="text-left p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-sky-500 transition">
+          <div class="font-mono font-bold text-cyan-300">25. Búsqueda O(log n)</div>
+          <div class="text-slate-300 text-xs mt-0.5">Descarta la mitad del espacio de búsqueda en cada paso.</div>
+        </button>
+      </div>
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>Vocabulario base listo (evaluado en las preguntas 16–20 del test final)</span><span class="text-cyan-400 font-bold">Inicio del Contenido: Sesión 13 ➔</span></div>
+    </section>
+
+    <!-- SLIDE 5: PUENTE DESDE SESIÓN 12 -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-6 sm:p-9 bg-slate-950">
+      <div class="border-b border-slate-800 pb-3">
+        <span class="text-sm font-bold uppercase tracking-wider text-amber-400">Conexión con Sesión 12</span>
+        <h2 class="text-3xl sm:text-4xl font-black text-white">¿Por qué Eliminar en un BST es más Delicado que Insertar?</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-7 my-auto text-base sm:text-lg">
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+          <div class="text-3xl">➕</div>
+          <h3 class="font-black text-cyan-300 text-xl">Insertar (Sesión 12)</h3>
+          <p class="text-slate-200 leading-relaxed">
+            Siempre bajamos hasta encontrar un espacio vacío (<code class="text-white">null</code>) al final de una rama y colocamos el nodo nuevo como una hoja. <strong>Nunca movemos nodos existentes.</strong>
+          </p>
+        </div>
+        <div class="p-6 rounded-2xl bg-slate-900 border border-amber-700/60 space-y-3">
+          <div class="text-3xl">✂️</div>
+          <h3 class="font-black text-amber-300 text-xl">Eliminar (Hoy • Sesión 13)</h3>
+          <p class="text-slate-200 leading-relaxed">
+            El nodo a borrar puede estar en medio del árbol sosteniendo uno o dos subárboles enteros. Si lo quitamos sin cuidado, <strong>desconectamos a sus hijos</strong> o <strong>rompemos la regla</strong> <code class="text-cyan-300">izquierdo &lt; raíz &lt; derecho</code>.
+          </p>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>Regla de oro: después de cada eliminación, el recorrido Inorden debe seguir ordenado</span><span class="text-cyan-400 font-bold">Los 3 Casos de Eliminación ➔</span></div>
+    </section>
+
+    <!-- SLIDE 4: CONCEPTO GENERAL - LOS 3 CASOS -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-6 sm:p-9 bg-slate-950">
+      <div class="border-b border-slate-800 pb-3">
+        <span class="text-sm font-bold uppercase tracking-wider text-cyan-400">Concepto General (AD) • Estrategia de Borrado</span>
+        <h2 class="text-3xl sm:text-4xl font-black text-white">Los 3 Casos de Eliminación en un BST</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-auto text-base">
+        <div class="p-6 rounded-2xl bg-slate-900 border border-emerald-700/60 space-y-3">
+          <div class="inline-block px-3 py-1 rounded-lg bg-emerald-950 text-emerald-300 font-extrabold text-sm">CASO 1 • 0 Hijos</div>
+          <h3 class="font-black text-white text-xl">Nodo Hoja</h3>
+          <p class="text-slate-300 leading-relaxed">No tiene descendientes (<code class="text-white">izq == null &amp;&amp; der == null</code>). Simplemente desconectamos el enlace del padre devolviendo <code class="text-emerald-300">null</code>.</p>
+          <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-sm text-emerald-300 font-semibold">Dificultad: Directa</div>
+        </div>
+        <div class="p-6 rounded-2xl bg-slate-900 border border-sky-700/60 space-y-3">
+          <div class="inline-block px-3 py-1 rounded-lg bg-sky-950 text-sky-300 font-extrabold text-sm">CASO 2 • 1 Hijo</div>
+          <h3 class="font-black text-white text-xl">Nodo con un Solo Hijo</h3>
+          <p class="text-slate-300 leading-relaxed">Tiene únicamente subárbol izquierdo o derecho. El padre hace un <strong>puente directo</strong> adoptando al único hijo disponible.</p>
+          <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-sm text-sky-300 font-semibold">Dificultad: Puente simple</div>
+        </div>
+        <div class="p-6 rounded-2xl bg-slate-900 border border-amber-700/60 space-y-3">
+          <div class="inline-block px-3 py-1 rounded-lg bg-amber-950 text-amber-300 font-extrabold text-sm">CASO 3 • 2 Hijos</div>
+          <h3 class="font-black text-white text-xl">Nodo con Dos Hijos</h3>
+          <p class="text-slate-300 leading-relaxed">Reemplazamos su valor por su <strong>Sucesor Inorden</strong> (el menor valor del subárbol derecho) y luego eliminamos ese sucesor repetido.</p>
+          <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-sm text-amber-300 font-semibold">Dificultad: Reemplazo + borrado</div>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>Antes de aplicar el caso, siempre buscamos el nodo igual que en buscar()</span><span class="text-cyan-400 font-bold">Detalle Caso 1 ➔</span></div>
+    </section>
+
+    <!-- SLIDE 5: CASO 1 (HOJA) CON DIAGRAMA SVG -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-6 sm:p-9 bg-slate-950">
+      <div class="border-b border-slate-800 pb-3">
+        <span class="text-sm font-bold uppercase tracking-wider text-emerald-400">Caso 1 (AD) • Nodo sin Hijos</span>
+        <h2 class="text-3xl sm:text-4xl font-black text-white">Eliminar un Nodo Hoja (Ejemplo: Borrar <code class="text-rose-400">20</code>)</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 my-auto items-center text-base">
+        <div class="md:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <svg viewBox="0 0 600 220" class="w-full h-auto">
+            <!-- ANTES -->
+            <text x="135" y="22" text-anchor="middle" fill="#94a3b8" font-size="13" font-weight="bold">ANTES (Borrar 20)</text>
+            <line x1="135" y1="55" x2="75" y2="115" stroke="#475569" stroke-width="2.5"/>
+            <line x1="135" y1="55" x2="195" y2="115" stroke="#475569" stroke-width="2.5"/>
+            <line x1="75" y1="115" x2="40" y2="175" stroke="#fb7185" stroke-width="2.5" stroke-dasharray="5,4"/>
+            <line x1="75" y1="115" x2="110" y2="175" stroke="#475569" stroke-width="2.5"/>
+            <circle cx="135" cy="55" r="20" fill="#1e293b" stroke="#22d3ee" stroke-width="2"/><text x="135" y="60" text-anchor="middle" fill="#fff" font-weight="bold">50</text>
+            <circle cx="75" cy="115" r="20" fill="#1e293b" stroke="#22d3ee" stroke-width="2"/><text x="75" y="120" text-anchor="middle" fill="#fff" font-weight="bold">30</text>
+            <circle cx="195" cy="115" r="20" fill="#1e293b" stroke="#22d3ee" stroke-width="2"/><text x="195" y="120" text-anchor="middle" fill="#fff" font-weight="bold">70</text>
+            <circle cx="40" cy="175" r="20" fill="#881337" stroke="#fb7185" stroke-width="2.5"/><text x="40" y="180" text-anchor="middle" fill="#fff" font-weight="bold">20</text>
+            <circle cx="110" cy="175" r="20" fill="#1e293b" stroke="#22d3ee" stroke-width="2"/><text x="110" y="180" text-anchor="middle" fill="#fff" font-weight="bold">40</text>
+
+            <!-- FLECHA CENTRAL -->
+            <text x="300" y="120" text-anchor="middle" fill="#34d399" font-size="28" font-weight="bold">➔</text>
+
+            <!-- DESPUÉS -->
+            <text x="465" y="22" text-anchor="middle" fill="#34d399" font-size="13" font-weight="bold">DESPUÉS (30.izq = null)</text>
+            <line x1="465" y1="55" x2="405" y2="115" stroke="#475569" stroke-width="2.5"/>
+            <line x1="465" y1="55" x2="525" y2="115" stroke="#475569" stroke-width="2.5"/>
+            <line x1="405" y1="115" x2="440" y2="175" stroke="#475569" stroke-width="2.5"/>
+            <circle cx="465" cy="55" r="20" fill="#1e293b" stroke="#22d3ee" stroke-width="2"/><text x="465" y="60" text-anchor="middle" fill="#fff" font-weight="bold">50</text>
+            <circle cx="405" cy="115" r="20" fill="#064e3b" stroke="#34d399" stroke-width="2.5"/><text x="405" y="120" text-anchor="middle" fill="#fff" font-weight="bold">30</text>
+            <circle cx="525" cy="115" r="20" fill="#1e293b" stroke="#22d3ee" stroke-width="2"/><text x="525" y="120" text-anchor="middle" fill="#fff" font-weight="bold">70</text>
+            <text x="368" y="178" text-anchor="middle" fill="#64748b" font-size="12" font-family="Fira Code">null</text>
+            <circle cx="440" cy="175" r="20" fill="#1e293b" stroke="#22d3ee" stroke-width="2"/><text x="440" y="180" text-anchor="middle" fill="#fff" font-weight="bold">40</text>
+          </svg>
+        </div>
+        <div class="md:col-span-5 space-y-4">
+          <div class="p-4 rounded-2xl bg-slate-900 border border-emerald-700/60 space-y-2">
+            <h3 class="font-bold text-emerald-400 text-lg">¿Qué ocurre?</h3>
+            <p class="text-slate-200">El nodo <code class="text-rose-300">20</code> no tiene hijos. Al retornar <code class="text-emerald-300">null</code> a su padre (<code class="text-white">30</code>), el enlace <code class="text-white">30.izquierdo</code> queda vacío y el resto del árbol ni siquiera se toca.</p>
+          </div>
+          <div class="code-box p-4 font-mono text-sm">
+            if (actual.izquierdo == null &amp;&amp; actual.derecho == null) {<br>
+            &nbsp;&nbsp;&nbsp;&nbsp;return null;<br>
+            }
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>Inorden antes: 20 → 30 → 40 → 50 → 70 | Después: 30 → 40 → 50 → 70</span><span class="text-cyan-400 font-bold">Detalle Caso 2 ➔</span></div>
+    </section>
+
+    <!-- SLIDE 6: CASO 2 (UN HIJO) CON DIAGRAMA SVG -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-6 sm:p-9 bg-slate-950">
+      <div class="border-b border-slate-800 pb-3">
+        <span class="text-sm font-bold uppercase tracking-wider text-sky-400">Caso 2 (AD) • Puente Directo</span>
+        <h2 class="text-3xl sm:text-4xl font-black text-white">Eliminar un Nodo con 1 Hijo (Ejemplo: Borrar <code class="text-rose-400">30</code>)</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 my-auto items-center text-base">
+        <div class="md:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <svg viewBox="0 0 600 220" class="w-full h-auto">
+            <!-- ANTES -->
+            <text x="135" y="22" text-anchor="middle" fill="#94a3b8" font-size="13" font-weight="bold">ANTES (30 solo tiene a 40)</text>
+            <line x1="135" y1="55" x2="75" y2="115" stroke="#fb7185" stroke-width="2.5" stroke-dasharray="5,4"/>
+            <line x1="135" y1="55" x2="195" y2="115" stroke="#475569" stroke-width="2.5"/>
+            <line x1="75" y1="115" x2="110" y2="175" stroke="#38bdf8" stroke-width="2.5"/>
+            <circle cx="135" cy="55" r="20" fill="#1e293b" stroke="#22d3ee" stroke-width="2"/><text x="135" y="60" text-anchor="middle" fill="#fff" font-weight="bold">50</text>
+            <circle cx="75" cy="115" r="20" fill="#881337" stroke="#fb7185" stroke-width="2.5"/><text x="75" y="120" text-anchor="middle" fill="#fff" font-weight="bold">30</text>
+            <circle cx="195" cy="115" r="20" fill="#1e293b" stroke="#22d3ee" stroke-width="2"/><text x="195" y="120" text-anchor="middle" fill="#fff" font-weight="bold">70</text>
+            <circle cx="110" cy="175" r="20" fill="#0c4a6e" stroke="#38bdf8" stroke-width="2.5"/><text x="110" y="180" text-anchor="middle" fill="#fff" font-weight="bold">40</text>
+
+            <text x="300" y="120" text-anchor="middle" fill="#38bdf8" font-size="28" font-weight="bold">➔</text>
+
+            <!-- DESPUÉS -->
+            <text x="465" y="22" text-anchor="middle" fill="#38bdf8" font-size="13" font-weight="bold">DESPUÉS (50 adopta a 40)</text>
+            <line x1="465" y1="55" x2="405" y2="120" stroke="#38bdf8" stroke-width="3"/>
+            <line x1="465" y1="55" x2="525" y2="120" stroke="#475569" stroke-width="2.5"/>
+            <circle cx="465" cy="55" r="20" fill="#1e293b" stroke="#22d3ee" stroke-width="2"/><text x="465" y="60" text-anchor="middle" fill="#fff" font-weight="bold">50</text>
+            <circle cx="405" cy="120" r="20" fill="#0c4a6e" stroke="#38bdf8" stroke-width="2.5"/><text x="405" y="125" text-anchor="middle" fill="#fff" font-weight="bold">40</text>
+            <circle cx="525" cy="120" r="20" fill="#1e293b" stroke="#22d3ee" stroke-width="2"/><text x="525" y="125" text-anchor="middle" fill="#fff" font-weight="bold">70</text>
+          </svg>
+        </div>
+        <div class="md:col-span-5 space-y-4">
+          <div class="p-4 rounded-2xl bg-slate-900 border border-sky-700/60 space-y-2">
+            <h3 class="font-bold text-sky-400 text-lg">¿Por qué sigue siendo BST?</h3>
+            <p class="text-slate-200">Como todo el subárbol de <code class="text-rose-300">30</code> ya era menor que <code class="text-white">50</code>, al subir <code class="text-sky-300">40</code> directamente al enlace izquierdo de <code class="text-white">50</code>, la propiedad de orden se conserva intacta.</p>
+          </div>
+          <div class="code-box p-4 font-mono text-sm">
+            if (actual.izquierdo == null) return actual.derecho;<br>
+            if (actual.derecho == null) return actual.izquierdo;
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>El hijo único ocupa exactamente el lugar que dejó el nodo eliminado</span><span class="text-cyan-400 font-bold">Detalle Caso 3 (Dos Hijos) ➔</span></div>
+    </section>
+
+    <!-- SLIDE 7: CASO 3 (DOS HIJOS Y SUCESOR INORDEN) -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-6 sm:p-9 bg-slate-950">
+      <div class="border-b border-slate-800 pb-3">
+        <span class="text-sm font-bold uppercase tracking-wider text-amber-400">Caso 3 (AD) • El Corazón de la Eliminación</span>
+        <h2 class="text-3xl sm:text-4xl font-black text-white">Eliminar un Nodo con 2 Hijos usando el <code class="text-amber-300">Sucesor Inorden</code></h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 my-auto text-base">
+        <div class="md:col-span-6 p-5 rounded-2xl bg-slate-900 border border-amber-700/60 space-y-3">
+          <h3 class="font-black text-amber-300 text-xl">¿Quién es el Sucesor Inorden?</h3>
+          <p class="text-slate-200">Es el valor <strong>inmediatamente mayor</strong> al nodo que vamos a eliminar. En el BST siempre se encuentra con una regla infalible:</p>
+          <div class="p-4 rounded-xl bg-slate-950 border border-amber-800/70 text-amber-200 font-bold text-center text-lg">
+            1 paso a la DERECHA ➔ bajar todo a la IZQUIERDA
+          </div>
+          <p class="text-slate-300 text-sm">Por ser el mínimo del subárbol derecho, cumple dos propiedades vitales: es <strong>mayor</strong> que todo el subárbol izquierdo y <strong>menor</strong> que el resto del subárbol derecho.</p>
+        </div>
+        <div class="md:col-span-6 p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+          <h3 class="font-black text-cyan-400 text-xl">Receta en 3 Pasos (Ejemplo: Borrar 50)</h3>
+          <ol class="space-y-2.5 text-slate-200 list-decimal list-inside">
+            <li><strong>Localizar el sucesor:</strong> Entrar al subárbol derecho de <code class="text-white">50</code> (<code class="text-white">70</code>) y bajar al extremo izquierdo → hallamos <code class="text-amber-300 font-bold">60</code>.</li>
+            <li><strong>Copiar el dato:</strong> Reemplazar <code class="text-white">50</code> por <code class="text-amber-300 font-bold">60</code> (¡no destruimos los enlaces de la raíz!).</li>
+            <li><strong>Borrar el duplicado:</strong> Eliminar el <code class="text-white">60</code> original dentro del subárbol derecho (garantizado que será <strong>Caso 1 o Caso 2</strong>, porque el mínimo nunca tiene hijo izquierdo).</li>
+          </ol>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>Alternativa equivalente: Predecesor Inorden (mayor valor del subárbol izquierdo)</span><span class="text-cyan-400 font-bold">Simulador Interactivo 1 ➔</span></div>
+    </section>
+
+    <!-- SLIDE 8: SIMULADOR INTERACTIVO 1 - LOS 3 CASOS PASO A PASO -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-5 sm:p-8 bg-slate-950">
+      <div class="border-b border-slate-800 pb-2.5 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <span class="text-sm font-bold uppercase text-cyan-400">Simulador Interactivo 1 • Animación Paso a Paso</span>
+          <h2 class="text-2xl sm:text-3xl font-black text-white">Visualizador de los 3 Casos de Eliminación</h2>
+        </div>
+        <div class="flex flex-wrap gap-2 text-sm">
+          <button onclick="setCaseSim('caso1')" id="cs-btn-caso1" class="px-3.5 py-1.5 rounded-lg bg-cyan-600 text-white font-bold">Caso 1: Hoja (20)</button>
+          <button onclick="setCaseSim('caso2')" id="cs-btn-caso2" class="px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 font-bold">Caso 2: 1 Hijo (30)</button>
+          <button onclick="setCaseSim('caso3')" id="cs-btn-caso3" class="px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 font-bold">Caso 3: 2 Hijos (50)</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 my-auto items-center text-base">
+        <div class="md:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-3 flex justify-center">
+          <svg id="case-sim-svg" viewBox="0 0 480 255" class="w-full h-auto"></svg>
+        </div>
+        <div class="md:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex space-x-2">
+            <button onclick="stepCaseSim(-1)" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold border border-slate-700">◀ Anterior</button>
+            <button onclick="stepCaseSim(1)" class="flex-1 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold">Paso Siguiente ▶</button>
+            <button onclick="resetCaseSim()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold border border-slate-700">↺</button>
+          </div>
+          <div class="p-4 rounded-xl bg-slate-950 border border-cyan-800/60 space-y-1.5">
+            <div id="case-sim-title" class="font-black text-cyan-400 text-lg"></div>
+            <div id="case-sim-desc" class="text-slate-200 leading-relaxed text-base"></div>
+          </div>
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-sm">
+            <div class="text-slate-400 font-sans font-bold text-xs uppercase mb-1">Inorden actual:</div>
+            <div id="case-sim-inorder" class="text-emerald-300 font-bold"></div>
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>Recorre cada paso para ver cómo se preservan todos los enlaces</span><span class="text-cyan-400 font-bold">Simulador Interactivo 2 ➔</span></div>
+    </section>
+
+    <!-- SLIDE 9: SIMULADOR INTERACTIVO 2 - BORRADO LIBRE EN BST -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-5 sm:p-8 bg-slate-950">
+      <div class="border-b border-slate-800 pb-2.5 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <span class="text-sm font-bold uppercase text-sky-400">Simulador Interactivo 2 • Laboratorio Libre en Pantalla</span>
+          <h2 class="text-2xl sm:text-3xl font-black text-white">Haz Clic en Cualquier Nodo para Eliminarlo del BST</h2>
+        </div>
+        <div class="flex items-center space-x-2 text-sm">
+          <input id="free-del-input" type="number" placeholder="Valor" class="w-24 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono text-center">
+          <button onclick="deleteFromInput()" class="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-white font-bold">Eliminar</button>
+          <button onclick="resetFreeBST()" class="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold border border-slate-700">↺ Restaurar</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 my-auto items-center text-base">
+        <div class="md:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-3 flex justify-center">
+          <svg id="free-bst-svg" viewBox="0 0 560 270" class="w-full h-auto"></svg>
+        </div>
+        <div class="md:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3.5">
+          <div class="text-sm font-bold uppercase text-cyan-400">Diagnóstico de la Última Eliminación:</div>
+          <div id="free-bst-log" class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 min-h-[96px] leading-relaxed"></div>
+          <div class="grid grid-cols-2 gap-3 font-mono text-sm">
+            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">Nodos: <strong id="free-bst-count" class="text-cyan-300">0</strong></div>
+            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">Altura: <strong id="free-bst-height" class="text-amber-300">0</strong></div>
+          </div>
+          <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 font-mono text-sm">
+            <span class="text-slate-400">Inorden: </span><strong id="free-bst-inorder" class="text-emerald-300"></strong>
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>Prueba borrar 20 (hoja), 30 (2 hijos), 50 (raíz con 2 hijos) o cualquier combinación</span><span class="text-cyan-400 font-bold">Ejemplos Vida Real ➔</span></div>
+    </section>
+
+    <!-- SLIDE 10: 3 EJEMPLOS EN LA VIDA REAL -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-6 sm:p-9 bg-slate-950">
+      <div class="border-b border-slate-800 pb-3"><span class="text-sm font-bold uppercase text-cyan-400">Conexión Cotidiana • Vida Real</span><h2 class="text-3xl sm:text-4xl font-black text-white">3 Ejemplos de Reemplazo Jerárquico en la Vida Real</h2></div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-auto text-base">
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+          <div class="text-4xl">🏢</div>
+          <h3 class="font-black text-cyan-400 text-xl">1. Sucesión en un Organigrama</h3>
+          <p class="text-slate-200 leading-relaxed">Si renuncia un gerente con dos equipos a cargo, no se despide a todo el personal: asciende el siguiente candidato más cercano en rango (sucesor) para mantener la estructura intacta.</p>
+        </div>
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+          <div class="text-4xl">📚</div>
+          <h3 class="font-black text-sky-400 text-xl">2. Retirar un Libro de un Índice</h3>
+          <p class="text-slate-200 leading-relaxed">Al dar de baja un código de referencia que dividía dos estanterías, la biblioteca promueve el código inmediato siguiente como separador para que nadie pierda el orden alfabético.</p>
+        </div>
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+          <div class="text-4xl">⚖️</div>
+          <h3 class="font-black text-emerald-400 text-xl">3. Equilibrio en una Balanza</h3>
+          <p class="text-slate-200 leading-relaxed">Si acumulas todos los paquetes de un solo lado de una balanza, se inclina y se vuelve ineficiente; redistribuir pesos (balanceo) devuelve la estabilidad al sistema.</p>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>Reorganizar sin romper el orden ahorra reconstruir todo desde cero</span><span class="text-cyan-400 font-bold">Ejemplos en Sistemas ➔</span></div>
+    </section>
+
+    <!-- SLIDE 11: 3 EJEMPLOS EN SISTEMAS -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-6 sm:p-9 bg-slate-950">
+      <div class="border-b border-slate-800 pb-3"><span class="text-sm font-bold uppercase text-sky-400">Desarrollo de Software • Sistemas Reales</span><h2 class="text-3xl sm:text-4xl font-black text-white">3 Ejemplos de Eliminación y Balanceo en Sistemas</h2></div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 my-auto text-base">
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+          <h3 class="font-black text-cyan-400 text-xl">1. Sentencia <code class="text-white">DELETE</code> en Índices SQL</h3>
+          <p class="text-slate-200 leading-relaxed">Cuando borras un cliente o producto en PostgreSQL/MySQL, el motor elimina la clave de su árbol índice y reequilibra nodos para que las futuras consultas <code class="text-white">SELECT</code> sigan siendo instantáneas.</p>
+        </div>
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+          <h3 class="font-black text-sky-400 text-xl">2. <code class="text-white">TreeMap.remove()</code> en Java</h3>
+          <p class="text-slate-200 leading-relaxed">La colección estándar <code class="text-white">TreeMap</code> aplica exactamente los 3 casos de eliminación con Sucesor Inorden y después aplica rotaciones automáticas para mantener altura <code class="text-emerald-300">O(log n)</code>.</p>
+        </div>
+        <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+          <h3 class="font-black text-emerald-400 text-xl">3. Tablas de Enrutamiento y Rankings</h3>
+          <p class="text-slate-200 leading-relaxed">Sistemas de videojuegos o subastas en línea insertan y eliminan puntajes continuamente; sin balanceo, el árbol se degradaría y causaría retrasos visibles.</p>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>Insertar, buscar y eliminar forman el ciclo completo de un índice dinámico</span><span class="text-cyan-400 font-bold">Análisis de Degradación ➔</span></div>
+    </section>
+
+    <!-- SLIDE 12: ANÁLISIS DE DEGRADACIÓN -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-6 sm:p-9 bg-slate-950">
+      <div class="border-b border-slate-800 pb-3">
+        <span class="text-sm font-bold uppercase tracking-wider text-rose-400">Análisis de Rendimiento (AD) • Degradación</span>
+        <h2 class="text-3xl sm:text-4xl font-black text-white">¿Cuándo y Por qué se Degrada un BST?</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-auto text-base">
+        <div class="p-6 rounded-2xl bg-slate-900 border border-rose-700/60 space-y-3">
+          <h3 class="font-black text-rose-400 text-xl">Causas Principales de Degradación</h3>
+          <ul class="space-y-2 text-slate-200 list-disc list-inside">
+            <li><strong>Datos ya ordenados:</strong> Insertar <code class="text-white">10, 20, 30, 40, 50</code> (o al revés) crea una sola rama inclinada de altura <code class="text-rose-300">n</code>.</li>
+            <li><strong>Eliminaciones asimétricas repetidas:</strong> Usar siempre el Sucesor Inorden (subárbol derecho) en miles de borrados acorta el lado derecho y deja más profundo el lado izquierdo.</li>
+          </ul>
+        </div>
+        <div class="p-6 rounded-2xl bg-slate-900 border border-cyan-700/60 space-y-3">
+          <h3 class="font-black text-cyan-400 text-xl">Impacto Real en Consultas</h3>
+          <div class="space-y-2.5 font-mono text-sm">
+            <div class="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-700 text-emerald-200">
+              Balanceado (1,000 nodos) → Altura ≈ 10 → máx. 10 pasos
+            </div>
+            <div class="p-3.5 rounded-xl bg-rose-950/40 border border-rose-700 text-rose-200">
+              Degenerado (1,000 nodos) → Altura = 1,000 → hasta 1,000 pasos
+            </div>
+          </div>
+          <p class="text-slate-300 text-sm">Conclusión: la velocidad de un BST depende directamente de su <strong>altura</strong> (<code class="text-white">O(h)</code>).</p>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>Un BST sin control de altura puede perder toda su ventaja algorítmica</span><span class="text-cyan-400 font-bold">Introducción al Balanceo ➔</span></div>
+    </section>
+
+    <!-- SLIDE 13: INTRODUCCIÓN AL BALANCEO Y FACTOR DE EQUILIBRIO -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-6 sm:p-9 bg-slate-950">
+      <div class="border-b border-slate-800 pb-3">
+        <span class="text-sm font-bold uppercase tracking-wider text-emerald-400">Introducción al Balanceo (AD) • Concepto AVL</span>
+        <h2 class="text-3xl sm:text-4xl font-black text-white">Factor de Equilibrio y Rotaciones Simples</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 my-auto text-base">
+        <div class="md:col-span-6 p-6 rounded-2xl bg-slate-900 border border-emerald-700/60 space-y-3">
+          <h3 class="font-black text-emerald-400 text-xl">Regla del Factor de Equilibrio (FE)</h3>
+          <div class="p-4 rounded-xl bg-slate-950 border border-emerald-800 font-mono text-center text-emerald-300 font-bold text-lg">
+            FE(nodo) = altura(izquierdo) - altura(derecho)
+          </div>
+          <ul class="space-y-1.5 text-slate-200 list-disc list-inside">
+            <li>Si <code class="text-emerald-300">FE ∈ {-1, 0, +1}</code> en todos los nodos → el árbol está <strong>Balanceado</strong>.</li>
+            <li>Si <code class="text-rose-300">|FE| ≥ 2</code> en algún nodo → existe <strong>Desequilibrio</strong> (riesgo de degradación).</li>
+          </ul>
+        </div>
+        <div class="md:col-span-6 p-6 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+          <h3 class="font-black text-cyan-400 text-xl">¿Cómo Corrigen el Desequilibrio los Árboles AVL?</h3>
+          <p class="text-slate-200 leading-relaxed">
+            Mediante <strong>rotaciones</strong> (izquierda o derecha): reorganizan localmente 3 nodos para reducir la altura en 1 nivel <strong>sin perder jamás la propiedad de orden BST</strong>.
+          </p>
+          <div class="p-3.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-sky-300">
+            Ejemplo: si tenemos <code class="text-white">10 → 20 → 30</code> (altura 3, FE = -2), una <strong>Rotación a la Izquierda</strong> sube a <code class="text-white">20</code> como raíz con hijos <code class="text-white">10</code> y <code class="text-white">30</code> (altura 2, FE = 0).
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>Árboles AVL y Red-Black automatizan este equilibrio en cada inserción y borrado</span><span class="text-cyan-400 font-bold">Simulador Interactivo 3 ➔</span></div>
+    </section>
+
+    <!-- SLIDE 14: SIMULADOR INTERACTIVO 3 - DEGRADACIÓN VS BALANCEO Y ROTACIÓN -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-5 sm:p-8 bg-slate-950">
+      <div class="border-b border-slate-800 pb-2.5 flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <span class="text-sm font-bold uppercase text-emerald-400">Simulador Interactivo 3 • Balanceo Visual</span>
+          <h2 class="text-2xl sm:text-3xl font-black text-white">Degradación, Factor de Equilibrio y Rotación Simple</h2>
+        </div>
+        <div class="flex flex-wrap gap-2 text-sm">
+          <button onclick="setBalanceView('degenerado')" id="bal-btn-degenerado" class="px-3.5 py-1.5 rounded-lg bg-rose-600 text-white font-bold">BST Degenerado</button>
+          <button onclick="setBalanceView('balanceado')" id="bal-btn-balanceado" class="px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 font-bold">BST Balanceado</button>
+          <button onclick="setBalanceView('rotacion')" id="bal-btn-rotacion" class="px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 font-bold">Rotación Izquierda ⚡</button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 my-auto items-center text-base">
+        <div class="md:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-3 flex justify-center">
+          <svg id="balance-svg" viewBox="0 0 540 250" class="w-full h-auto"></svg>
+        </div>
+        <div class="md:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-3.5">
+          <div id="bal-status" class="p-3.5 rounded-xl border font-bold text-base"></div>
+          <div id="bal-metrics" class="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-1.5 font-mono text-sm"></div>
+          <div id="bal-explain" class="p-4 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 leading-relaxed text-sm"></div>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>Compara el mismo conjunto de claves con y sin equilibrio</span><span class="text-cyan-400 font-bold">Explicación de Código 1 ➔</span></div>
+    </section>
+
+    <!-- SLIDE 15: EXPLICACIÓN DE CÓDIGO 1 - ENCONTRAR MÍNIMO -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-6 sm:p-9 bg-slate-950">
+      <div class="border-b border-slate-800 pb-3">
+        <span class="text-sm font-bold uppercase text-cyan-400">Explicación de Código 1 (AP) • Método Auxiliar</span>
+        <h2 class="text-3xl sm:text-4xl font-black text-white">Hallando el Sucesor Inorden: <code class="text-amber-300">encontrarMinimo()</code></h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 my-auto text-base">
+        <div class="md:col-span-7 code-box p-5 font-mono">
+          <div class="text-amber-300 font-bold mb-2 text-sm">ArbolBST.java — encontrarMinimo(NodoBST nodo)</div>
+<pre class="text-slate-200 overflow-x-auto">
+public int encontrarMinimo(NodoBST nodo) {
+    NodoBST actual = nodo;
+    while (actual.izquierdo != null) {
+        actual = actual.izquierdo;
+    }
+    return actual.dato;
+}
+</pre>
+        </div>
+        <div class="md:col-span-5 space-y-3.5">
+          <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-1.5">
+            <h3 class="font-bold text-cyan-400 text-lg">¿Cómo se usa al eliminar?</h3>
+            <p class="text-slate-200 text-sm">Cuando queremos el Sucesor Inorden de <code class="text-white">actual</code> (Caso 3), llamamos a <code class="text-amber-300">encontrarMinimo(actual.derecho)</code>.</p>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-900 border border-amber-700/60 space-y-1.5">
+            <h3 class="font-bold text-amber-300 text-lg">¿Por qué un ciclo <code class="text-white">while</code> simple?</h3>
+            <p class="text-slate-200 text-sm">Porque en un BST el valor más pequeño de cualquier subárbol siempre está bajando únicamente por <code class="text-white">izquierdo</code> hasta topar con <code class="text-white">null</code>.</p>
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>Paso previo indispensable para resolver el Caso 3</span><span class="text-cyan-400 font-bold">Código: Casos 1 y 2 ➔</span></div>
+    </section>
+
+    <!-- SLIDE 16: EXPLICACIÓN DE CÓDIGO 2 - ELIMINAR CASOS 1 Y 2 -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-6 sm:p-9 bg-slate-950">
+      <div class="border-b border-slate-800 pb-3">
+        <span class="text-sm font-bold uppercase text-emerald-400">Explicación de Código 2 (AP) • Búsqueda + Casos 1 y 2</span>
+        <h2 class="text-3xl sm:text-4xl font-black text-white">Método <code class="text-cyan-400">eliminar(int valor)</code> — Primera Parte</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 my-auto text-base">
+        <div class="md:col-span-7 code-box p-5 font-mono">
+<pre class="text-slate-200 overflow-x-auto">
+public void eliminar(int valor) {
+    raiz = eliminarRecursivo(raiz, valor);
+}
+
+private NodoBST eliminarRecursivo(NodoBST actual, int valor) {
+    if (actual == null) return null;
+
+    if (valor &lt; actual.dato) {
+        actual.izquierdo = eliminarRecursivo(actual.izquierdo, valor);
+    } else if (valor &gt; actual.dato) {
+        actual.derecho = eliminarRecursivo(actual.derecho, valor);
+    } else {
+        <span class="text-emerald-300">// Caso 1: Hoja</span>
+        if (actual.izquierdo == null &amp;&amp; actual.derecho == null) return null;
+        <span class="text-sky-300">// Caso 2: Un solo hijo</span>
+        if (actual.izquierdo == null) return actual.derecho;
+        if (actual.derecho == null) return actual.izquierdo;
+        <span class="text-amber-300">// Caso 3 continúa en la siguiente diapositiva...</span>
+    }
+    return actual;
+}
+</pre>
+        </div>
+        <div class="md:col-span-5 space-y-3.5">
+          <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+            <strong class="text-cyan-400 block mb-1">1. Reconexión Automática:</strong>
+            <p class="text-slate-200 text-sm">Escribir <code class="text-white">actual.izquierdo = eliminarRecursivo(...)</code> actualiza el enlace del padre con lo que devuelva el hijo (<code class="text-white">null</code> en Caso 1 o el nieto en Caso 2).</p>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+            <strong class="text-emerald-400 block mb-1">2. Si el valor no existe:</strong>
+            <p class="text-slate-200 text-sm">El caso base <code class="text-white">if (actual == null) return null;</code> detiene el recorrido sin lanzar error ni modificar el árbol.</p>
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>Misma estructura de retorno que aprendimos en insertar()</span><span class="text-cyan-400 font-bold">Código: Caso 3 ➔</span></div>
+    </section>
+
+    <!-- SLIDE 17: EXPLICACIÓN DE CÓDIGO 3 - CASO 3 EN JAVA -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-6 sm:p-9 bg-slate-950">
+      <div class="border-b border-slate-800 pb-3">
+        <span class="text-sm font-bold uppercase text-amber-400">Explicación de Código 3 (AP) • Caso 3 (Dos Hijos)</span>
+        <h2 class="text-3xl sm:text-4xl font-black text-white">Tres Líneas que Resuelven el Caso de Dos Hijos</h2>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 my-auto text-base">
+        <div class="md:col-span-7 code-box p-5 font-mono">
+          <div class="text-amber-300 font-bold mb-2 text-sm">Dentro del bloque else (actual tiene ambos hijos):</div>
+<pre class="text-slate-200 overflow-x-auto">
+<span class="text-cyan-300">// Paso 1: Encontrar el sucesor inorden (mínimo del lado derecho)</span>
+int sucesor = encontrarMinimo(actual.derecho);
+
+<span class="text-emerald-300">// Paso 2: Copiar el valor del sucesor en el nodo actual</span>
+actual.dato = sucesor;
+
+<span class="text-amber-300">// Paso 3: Eliminar el valor repetido en el subárbol derecho</span>
+actual.derecho = eliminarRecursivo(actual.derecho, sucesor);
+</pre>
+        </div>
+        <div class="md:col-span-5 space-y-3.5">
+          <div class="p-4 rounded-2xl bg-slate-900 border border-amber-700/60">
+            <strong class="text-amber-300 block mb-1">¿Por qué no entra en bucle infinito?</strong>
+            <p class="text-slate-200 text-sm">Porque <code class="text-white">sucesor</code> es el nodo más a la izquierda del subárbol derecho, así que <strong>jamás tiene hijo izquierdo</strong>. Al borrarlo en el Paso 3, siempre cae en Caso 1 o Caso 2 y termina de inmediato.</p>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800">
+            <strong class="text-cyan-400 block mb-1">Ventaja de Copiar el Dato:</strong>
+            <p class="text-slate-200 text-sm">No necesitamos re-enlazar manualmente el subárbol izquierdo del nodo borrado; ese enlace permanece intacto.</p>
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>Reutilizar eliminarRecursivo() hace el código breve y confiable</span><span class="text-cyan-400 font-bold">Código: Diagnóstico de Balanceo ➔</span></div>
+    </section>
+
+    <!-- SLIDE 18: EXPLICACIÓN DE CÓDIGO 4 - DIAGNÓSTICO DE BALANCEO -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-6 sm:p-9 bg-slate-950">
+      <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+        <div>
+          <span class="text-sm font-bold uppercase text-emerald-400">Explicación de Código 4 (AD/AP) • Detección de Degradación</span>
+          <h2 class="text-3xl sm:text-4xl font-black text-white">Métodos <code class="text-cyan-400">calcularFactorEquilibrio()</code> y <code class="text-emerald-400">estaBalanceado()</code></h2>
+        </div>
+        <span class="font-mono text-sm bg-slate-900 border border-slate-700 px-3 py-1 rounded-lg text-cyan-300">clase13u2_ejemplo_sucesor_balanceo/</span>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 my-auto text-base">
+        <div class="md:col-span-7 code-box p-5 font-mono">
+<pre class="text-slate-200 overflow-x-auto">
+public int calcularFactorEquilibrio(NodoBST nodo) {
+    if (nodo == null) return 0;
+    return calcularAlturaRecursivo(nodo.izquierdo)
+         - calcularAlturaRecursivo(nodo.derecho);
+}
+
+private boolean estaBalanceadoRecursivo(NodoBST nodo) {
+    if (nodo == null) return true;
+    int factor = calcularFactorEquilibrio(nodo);
+    return Math.abs(factor) &lt;= 1
+        &amp;&amp; estaBalanceadoRecursivo(nodo.izquierdo)
+        &amp;&amp; estaBalanceadoRecursivo(nodo.derecho);
+}
+</pre>
+        </div>
+        <div class="md:col-span-5 space-y-3.5">
+          <div class="code-box p-4 font-mono text-sm">
+            <div class="text-slate-400 font-sans text-xs mb-1">Salida ejemplo de aula:</div>
+<pre class="text-emerald-300">
+BST Balanceado -> Altura: 3 | ¿Balanceado?: true
+BST Degradado  -> Altura: 7 | ¿Balanceado?: false
+Sucesor Inorden de 50: 60
+Sucesor Inorden de 30: 40
+</pre>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-sm text-slate-200">
+            Comprobar <code class="text-white">Math.abs(factor) &lt;= 1</code> en cada nodo nos dice automáticamente si el árbol necesita balanceo.
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>Mide la salud estructural de tu BST después de insertar o eliminar</span><span class="text-cyan-400 font-bold">Bloque TA y Participación ➔</span></div>
+    </section>
+
+    <!-- SLIDE 19: BLOQUE TA Y PARTICIPACIÓN ACTIVA -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-center items-center text-center p-6 sm:p-10 bg-slate-950">
+      <div class="max-w-4xl w-full bg-slate-900 border border-cyan-700/60 rounded-3xl p-8 space-y-5 shadow-2xl">
+        <div class="w-16 h-16 mx-auto rounded-2xl bg-cyan-950 border border-cyan-600 flex items-center justify-center text-3xl">🎙️</div>
+        <div class="inline-block px-4 py-1 rounded-full bg-cyan-950 border border-cyan-700 text-cyan-300 text-sm font-extrabold uppercase tracking-wider">Bloque TA (1.0h) y Participación Directa</div>
+        <h2 class="text-3xl sm:text-4xl font-black text-white">Estudiante seleccionado</h2>
+        <p class="text-slate-200 text-lg leading-relaxed">Con apoyo de <code class="text-cyan-300">guia_estudio_ta_reconexion_dos_hijos.md</code>, el docente designa al participante para explicar uno de los dos retos de trazado en vivo.</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-left text-base pt-3">
+          <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800">
+            <div class="font-bold text-cyan-400 mb-1">Reto 1 (Sucesor Inorden):</div>
+            <p class="text-slate-200">En el BST <code class="text-white">{50, 30, 70, 20, 40, 60, 80, 55}</code>, si eliminamos la raíz <code class="text-white">50</code>, ¿qué número ocupa su lugar y qué ocurre con el nodo <code class="text-white">60</code>?</p>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-950 border border-slate-800">
+            <div class="font-bold text-amber-400 mb-1">Reto 2 (Equilibrio):</div>
+            <p class="text-slate-200">Si insertamos <code class="text-white">10, 20, 30, 40, 50</code>, ¿cuál es el factor de equilibrio de la raíz <code class="text-white">10</code> y por qué se considera degradado?</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 20: BLOQUE AP (2.0h) - CODIFICACIÓN GUIADA EN IDE -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-6 sm:p-9 bg-slate-950">
+      <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+        <div>
+          <span class="text-sm font-bold uppercase tracking-wider text-cyan-400">Actividad Práctica (2.0h AP) • Práctica Guiada en IDE</span>
+          <h2 class="text-3xl sm:text-4xl font-black text-white">Codificar <code class="text-cyan-400">eliminar()</code> y Balanceo en <code class="text-emerald-400">ArbolBST</code></h2>
+        </div>
+        <span class="font-mono text-sm bg-slate-900 border border-slate-700 px-3 py-1 rounded-lg text-cyan-300">clase13u2_arbol_bst_eliminar_base/</span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 my-auto text-base">
+        <div class="md:col-span-5 p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+          <h3 class="font-black text-cyan-400 text-lg">Pasos a Completar (TODOs)</h3>
+          <ol class="space-y-2 text-slate-200 list-decimal list-inside text-sm leading-relaxed">
+            <li><strong>TODO 1:</strong> Completar <code class="text-amber-300">encontrarMinimo(NodoBST nodo)</code> en <code class="text-white">ArbolBST.java</code>.</li>
+            <li><strong>TODO 2:</strong> Completar <code class="text-emerald-300">eliminarRecursivo()</code> cubriendo Caso 1 (hoja), Caso 2 (un hijo) y Caso 3 (dos hijos con sucesor inorden).</li>
+            <li><strong>TODO 3:</strong> Completar <code class="text-sky-300">calcularFactorEquilibrio()</code> y <code class="text-sky-300">estaBalanceado()</code>.</li>
+            <li><strong>TODO A–C:</strong> Probar en <code class="text-white">Main.java</code> borrando <code class="text-white">20</code>, <code class="text-white">30</code>, <code class="text-white">50</code> y comparando con <code class="text-white">{10, 20, 30, 40, 50}</code>.</li>
+          </ol>
+        </div>
+
+        <div class="md:col-span-7 code-box p-5 font-mono space-y-1">
+          <div class="text-slate-400 font-sans text-xs">Salida verificada en consola:</div>
+<pre class="text-emerald-300 overflow-x-auto">
+Inorden inicial: 20 -> 30 -> 40 -> 50 -> 60 -> 70 -> 80
+Tras eliminar hoja 20: 30 -> 40 -> 50 -> 60 -> 70 -> 80
+Tras eliminar 30 (1 hijo): 40 -> 50 -> 60 -> 70 -> 80
+Tras eliminar 50 (2 hijos): 40 -> 60 -> 70 -> 80
+Nueva raíz: 60 | Altura: 3 | ¿Balanceado?: true
+BST degradado [10..50] -> Altura: 5 | Factor raíz: -4 | ¿Balanceado?: false
+</pre>
+        </div>
+      </div>
+
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>javac -encoding utf-8 -d bin src/*.java && java -cp bin Main</span><span class="text-cyan-400 font-bold">Tarea Moodle y Rúbrica ➔</span></div>
+    </section>
+
+    <!-- SLIDE 21: TAREA MOODLE Y MATRIZ DE CALIFICACIÓN -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-6 sm:p-9 bg-slate-950">
+      <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+        <div>
+          <span class="text-sm font-bold uppercase tracking-wider text-cyan-400">Entrega en Campus Virtual Moodle</span>
+          <h2 class="text-3xl sm:text-4xl font-black text-white">Matriz de Calificación de la Tarea (10.00 Pts)</h2>
+        </div>
+        <span class="px-4 py-1.5 rounded-full bg-amber-950 border border-amber-700 text-amber-300 text-sm font-bold">Cierre: Domingo 29 Nov 23:59</span>
+      </div>
+
+      <div class="my-auto overflow-x-auto">
+        <table class="w-full text-left border-collapse text-base">
+          <thead>
+            <tr class="bg-slate-900 border-b border-slate-700 text-cyan-400 uppercase text-sm">
+              <th class="p-3.5">Criterio de Evaluación</th>
+              <th class="p-3.5 text-center">Puntaje</th>
+              <th class="p-3.5">Nivel Excelente (100%)</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-800 text-slate-200">
+            <tr class="bg-slate-900/50">
+              <td class="p-3.5 font-bold text-white">1. Casos 1 y 2 de <code class="text-cyan-300">eliminar()</code></td>
+              <td class="p-3.5 text-center font-mono font-bold text-cyan-400">2.50</td>
+              <td class="p-3.5">Elimina correctamente nodos hoja y nodos con un solo hijo manteniendo los enlaces válidos.</td>
+            </tr>
+            <tr>
+              <td class="p-3.5 font-bold text-white">2. Caso 3 con Sucesor Inorden</td>
+              <td class="p-3.5 text-center font-mono font-bold text-cyan-400">3.00</td>
+              <td class="p-3.5">Implementa <code class="text-white">encontrarMinimo()</code>, reemplaza el dato y elimina el duplicado manteniendo el Inorden ordenado.</td>
+            </tr>
+            <tr class="bg-slate-900/50">
+              <td class="p-3.5 font-bold text-white">3. Degradación y <code class="text-emerald-300">estaBalanceado()</code></td>
+              <td class="p-3.5 text-center font-mono font-bold text-cyan-400">2.50</td>
+              <td class="p-3.5">Calcula factor de equilibrio y valida correctamente árboles balanceados frente a árboles degenerados.</td>
+            </tr>
+            <tr>
+              <td class="p-3.5 font-bold text-white">4. Estudio TA, Trazados e Informe PDF</td>
+              <td class="p-3.5 text-center font-mono font-bold text-cyan-400">2.00</td>
+              <td class="p-3.5">Carátula oficial, respuestas de la guía TA, trazado visual del Caso 3, captura nítida de consola y conclusiones.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="border-t border-slate-800 pt-2 flex justify-between text-sm text-slate-400"><span>Archivo: AP_Clase13_EliminacionBST_Apellido_Nombre.pdf</span><span class="text-cyan-400 font-bold">Evaluación Formativa ➔</span></div>
+    </section>
+
+    <!-- SLIDE 24: ENCUADRE DEL TEST -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-center items-center text-center p-6 sm:p-10 bg-slate-950">
+      <div class="max-w-4xl w-full bg-slate-900 border border-slate-800 rounded-3xl p-10 space-y-5 shadow-2xl">
+        <div class="w-16 h-16 mx-auto rounded-2xl bg-cyan-950 border border-cyan-700 text-cyan-400 flex items-center justify-center text-3xl">🧠</div>
+        <span class="inline-block px-4 py-1 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-300 text-sm font-bold uppercase tracking-wider">Comprobación de Aprendizajes</span>
+        <h2 class="text-3xl sm:text-4xl font-black text-white">Evaluación Tipo Test: 20 Preguntas</h2>
+        <p class="text-slate-200 text-lg leading-relaxed">Responderemos 20 preguntas (una a la vez): <strong>15</strong> sobre eliminación en BST, Sucesor Inorden y balanceo + <strong>5</strong> sobre los términos clave del Glosario Técnico (Clases 1–12).</p>
+        <button onclick="goToSlide(24)" class="px-8 py-3.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-extrabold text-base shadow-lg transition">Comenzar Test (Pregunta 1) ▶</button>
+      </div>
+    </section>
+
+    <!-- SLIDE 25: TEST 1 PREGUNTA A LA VEZ -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-5 sm:p-8 bg-slate-950">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 gap-2">
+        <div>
+          <span class="text-sm font-bold uppercase tracking-wider text-cyan-400">Evaluación Formativa • Tipo Test</span>
+          <h2 class="text-2xl sm:text-3xl font-black text-white flex items-center space-x-2"><span>Pregunta</span><span id="quiz-question-number" class="text-cyan-400 font-mono">1</span><span>de 20</span></h2>
+        </div>
+        <div class="flex items-center space-x-3">
+          <div class="text-base font-mono bg-slate-900 border border-slate-800 px-4 py-1.5 rounded-xl">Aciertos: <span id="quiz-score-badge" class="text-cyan-400 font-bold">0</span> / 20</div>
+          <div class="flex space-x-2">
+            <button onclick="navQuizQuestion(-1)" id="btn-quiz-prev" class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold text-sm border border-slate-700">◀ Anterior</button>
+            <button onclick="navQuizQuestion(1)" id="btn-quiz-next" class="px-4 py-2 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold text-sm shadow"><span id="btn-quiz-next-text">Siguiente</span> ▶</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="py-2"><div id="quiz-pills" class="flex items-center justify-between gap-1 overflow-x-auto pb-1 text-sm"></div></div>
+
+      <div class="my-auto bg-slate-900/90 border border-slate-800 rounded-2xl p-5 sm:p-7 shadow-xl space-y-4">
+        <div class="p-4 bg-slate-950/80 border border-slate-800/80 rounded-xl min-h-[64px] flex items-center"><h3 id="quiz-question-text" class="text-lg sm:text-2xl font-bold text-white leading-snug">Cargando...</h3></div>
+        <div id="quiz-options-container" class="grid grid-cols-1 sm:grid-cols-2 gap-3.5"></div>
+        <div id="quiz-feedback-box" class="hidden p-4 rounded-xl text-sm sm:text-base leading-relaxed border"></div>
+      </div>
+
+      <div class="border-t border-slate-800/80 pt-2 flex items-center justify-between text-sm text-slate-400"><span>Preguntas 1–15: Sesión 13 (BST) • Preguntas 16–20: Glosario Clases 1–12</span><span class="font-mono text-cyan-400 font-bold">1 Pregunta a la Vez ➔</span></div>
+    </section>
+
+    <!-- SLIDE 26: RESULTADOS FINALES Y PUENTE A SESIÓN 14 -->
+    <section class="slide w-full max-w-[1440px] h-full flex-col justify-between p-5 sm:p-8 bg-slate-950">
+      <div class="border-b border-slate-800 pb-3 flex items-center justify-between">
+        <div><span class="text-sm font-bold uppercase text-cyan-400">Consolidación de la Sesión 13</span><h2 class="text-2xl sm:text-3xl font-black text-white">Resultados de la Evaluación y Cierre</h2></div>
+        <div class="px-4 py-1.5 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-300 text-sm font-bold">🌳 EDA • Unidad 2</div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-6 my-auto items-center">
+        <div class="md:col-span-5 bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 rounded-3xl p-7 text-center space-y-4 shadow-2xl">
+          <div class="w-16 h-16 mx-auto rounded-2xl bg-cyan-950 border border-cyan-700/60 text-cyan-400 flex items-center justify-center text-3xl">🏆</div>
+          <div>
+            <p class="text-sm text-slate-400 uppercase font-bold">Aciertos Totales</p>
+            <h3 id="final-score-display" class="text-5xl font-black text-white my-1 font-mono">0 / 20</h3>
+            <span id="final-percentage-badge" class="inline-block px-4 py-1 rounded-full text-sm font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">0%</span>
+          </div>
+          <p id="final-eval-msg" class="text-base text-slate-200 leading-relaxed pt-1"></p>
+          <div class="pt-2 flex flex-col gap-2">
+            <button onclick="resetFullQuiz()" class="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold text-sm">↺ Reiniciar Test</button>
+            <button onclick="goToSlide(24)" class="w-full py-2 px-4 rounded-xl bg-slate-800 text-slate-300 font-bold text-sm border border-slate-700">◀ Volver al Test</button>
+          </div>
+        </div>
+        <div class="md:col-span-7 space-y-3 text-base">
+          <div class="p-4 bg-slate-900/90 border border-slate-800 rounded-xl"><strong class="text-cyan-400">1. Los 3 Casos de Borrado:</strong> Hoja (<code class="text-white">null</code>), un hijo (puente directo) y dos hijos (Sucesor Inorden).</div>
+          <div class="p-4 bg-slate-900/90 border border-slate-800 rounded-xl"><strong class="text-sky-400">2. Degradación y Equilibrio:</strong> Un BST mantiene su eficiencia cuando su altura se conserva cerca de <code class="text-white">log₂(n)</code>.</div>
+          <div class="p-4 bg-slate-900/90 border border-slate-800 rounded-xl"><strong class="text-emerald-400">3. Código en Java:</strong> <code class="text-white">eliminar()</code>, <code class="text-white">encontrarMinimo()</code> y <code class="text-white">estaBalanceado()</code> verificados en <code class="text-white">ArbolBST</code>.</div>
+          <div class="p-4 bg-slate-900/90 border border-cyan-800/60 rounded-xl"><strong class="text-amber-300">Próxima Sesión (Miércoles 25/11/2026):</strong> Tablas Hash (Parte I): pares clave-valor, funciones hash y acceso en tiempo constante <code class="text-white">O(1)</code>.</div>
+        </div>
+      </div>
+      <div class="border-t border-slate-800/80 pt-2 flex items-center justify-between text-sm text-slate-400"><span>ESPAM MFL • Carrera de Desarrollo de Software • Estructuras de Datos y Algoritmos</span><span class="text-cyan-400 font-bold">Sesión 13 Concluida ✓</span></div>
+    </section>
+
+  </main>
+
+  <footer class="bg-slate-900 border-t border-slate-800 px-6 py-2.5 flex items-center justify-between text-sm z-30 shrink-0">
+    <div class="flex items-center space-x-2">
+      <button onclick="prevSlide()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-1.5 rounded-lg border border-slate-700 font-bold">◀ Anterior</button>
+      <button onclick="nextSlide()" class="bg-gradient-to-r from-cyan-600 to-blue-600 text-white px-4 py-1.5 rounded-lg font-bold shadow">Siguiente ▶</button>
+    </div>
+    <div class="hidden sm:flex items-center space-x-4 text-slate-400 text-sm"><span>Atajos: [← / →]</span><span>•</span><span>ESPAM MFL • CDS-0202</span></div>
+    <div class="text-slate-400 text-sm font-mono">24/11/2026</div>
+  </footer>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const totalSlides = slides.length;
+    let currentSlide = 0;
+
+    function showSlide(index) {
+      if (index < 0) index = 0;
+      if (index >= totalSlides) index = totalSlides - 1;
+      slides[currentSlide].classList.remove('active');
+      currentSlide = index;
+      slides[currentSlide].classList.add('active');
+      document.getElementById('slide-indicator').textContent = String(currentSlide + 1).padStart(2, '0') + ' / ' + String(totalSlides).padStart(2, '0');
+      document.getElementById('slide-progress').style.width = ((currentSlide + 1) / totalSlides * 100) + '%';
+    }
+    function nextSlide() { if (currentSlide < totalSlides - 1) showSlide(currentSlide + 1); }
+    function prevSlide() { if (currentSlide > 0) showSlide(currentSlide - 1); }
+    function goToSlide(idx) { showSlide(idx); }
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+      else document.exitFullscreen().catch(() => {});
+    }
+    document.addEventListener('keydown', (e) => {
+      if (document.activeElement && ['INPUT', 'SELECT'].includes(document.activeElement.tagName)) return;
+      if (e.key === 'ArrowRight') nextSlide();
+      if (e.key === 'ArrowLeft') prevSlide();
+    });
+
+    // SIMULADOR 1: 3 CASOS DE ELIMINACIÓN PASO A PASO
+    const caseScenarios = {
+      caso1: [
+        {
+          title: 'Paso 1/2 — Localizar la hoja 20',
+          desc: 'Bajamos 20 < 50 (izquierda) y 20 < 30 (izquierda). Detectamos que 20 no tiene hijo izquierdo ni derecho (Caso 1: Hoja).',
+          inorder: '20 -> 30 -> 40 -> 50 -> 60 -> 70 -> 80',
+          nodes: [
+            { v: 50, x: 240, y: 38, p: null, c: 'normal' },
+            { v: 30, x: 130, y: 112, p: 50, c: 'normal' },
+            { v: 70, x: 350, y: 112, p: 50, c: 'normal' },
+            { v: 20, x: 75, y: 192, p: 30, c: 'target' },
+            { v: 40, x: 185, y: 192, p: 30, c: 'normal' },
+            { v: 60, x: 295, y: 192, p: 70, c: 'normal' },
+            { v: 80, x: 405, y: 192, p: 70, c: 'normal' }
+          ]
+        },
+        {
+          title: 'Paso 2/2 — Desconectar enlace (return null)',
+          desc: '30.izquierdo recibe null. El nodo 20 sale del árbol y el Inorden sigue estrictamente ordenado.',
+          inorder: '30 -> 40 -> 50 -> 60 -> 70 -> 80',
+          nodes: [
+            { v: 50, x: 240, y: 38, p: null, c: 'normal' },
+            { v: 30, x: 130, y: 112, p: 50, c: 'ok' },
+            { v: 70, x: 350, y: 112, p: 50, c: 'normal' },
+            { v: 40, x: 185, y: 192, p: 30, c: 'normal' },
+            { v: 60, x: 295, y: 192, p: 70, c: 'normal' },
+            { v: 80, x: 405, y: 192, p: 70, c: 'normal' }
+          ]
+        }
+      ],
+      caso2: [
+        {
+          title: 'Paso 1/2 — Localizar 30 (tiene 1 solo hijo: 40)',
+          desc: 'El nodo 30 tiene izquierdo == null y derecho == 40. Aplica el Caso 2 (puente directo).',
+          inorder: '30 -> 40 -> 50 -> 60 -> 70 -> 80',
+          nodes: [
+            { v: 50, x: 240, y: 38, p: null, c: 'normal' },
+            { v: 30, x: 130, y: 112, p: 50, c: 'target' },
+            { v: 70, x: 350, y: 112, p: 50, c: 'normal' },
+            { v: 40, x: 185, y: 192, p: 30, c: 'succ' },
+            { v: 60, x: 295, y: 192, p: 70, c: 'normal' },
+            { v: 80, x: 405, y: 192, p: 70, c: 'normal' }
+          ]
+        },
+        {
+          title: 'Paso 2/2 — 50 adopta directamente al hijo 40',
+          desc: 'Al retornar actual.derecho (40), el enlace 50.izquierdo apunta ahora a 40 y 30 queda eliminado.',
+          inorder: '40 -> 50 -> 60 -> 70 -> 80',
+          nodes: [
+            { v: 50, x: 240, y: 38, p: null, c: 'normal' },
+            { v: 40, x: 130, y: 112, p: 50, c: 'ok' },
+            { v: 70, x: 350, y: 112, p: 50, c: 'normal' },
+            { v: 60, x: 295, y: 192, p: 70, c: 'normal' },
+            { v: 80, x: 405, y: 192, p: 70, c: 'normal' }
+          ]
+        }
+      ],
+      caso3: [
+        {
+          title: 'Paso 1/3 — Localizar 50 (tiene 2 hijos)',
+          desc: 'La raíz 50 tiene hijo izquierdo (40) y derecho (70). Buscamos su Sucesor Inorden: 1 paso a la derecha (70) y todo a la izquierda → 60.',
+          inorder: '40 -> 50 -> 60 -> 70 -> 80',
+          nodes: [
+            { v: 50, x: 240, y: 38, p: null, c: 'target' },
+            { v: 40, x: 130, y: 112, p: 50, c: 'normal' },
+            { v: 70, x: 350, y: 112, p: 50, c: 'normal' },
+            { v: 60, x: 295, y: 192, p: 70, c: 'succ' },
+            { v: 80, x: 405, y: 192, p: 70, c: 'normal' }
+          ]
+        },
+        {
+          title: 'Paso 2/3 — Copiar el Sucesor Inorden (60) en la raíz',
+          desc: 'Ejecutamos actual.dato = 60. Ahora 60 aparece temporalmente duplicado en la raíz y en el subárbol derecho.',
+          inorder: '40 -> 60 -> 60 -> 70 -> 80 (duplicado temporal)',
+          nodes: [
+            { v: 60, x: 240, y: 38, p: null, c: 'ok' },
+            { v: 40, x: 130, y: 112, p: 60, c: 'normal' },
+            { v: 70, x: 350, y: 112, p: 60, c: 'normal' },
+            { v: 60, id: 'dup', x: 295, y: 192, p: 70, c: 'target' },
+            { v: 80, x: 405, y: 192, p: 70, c: 'normal' }
+          ]
+        },
+        {
+          title: 'Paso 3/3 — Eliminar el 60 duplicado (es hoja -> Caso 1)',
+          desc: 'actual.derecho = eliminarRecursivo(actual.derecho, 60) quita la hoja duplicada. ¡El BST vuelve a estar perfecto y ordenado!',
+          inorder: '40 -> 60 -> 70 -> 80',
+          nodes: [
+            { v: 60, x: 240, y: 38, p: null, c: 'ok' },
+            { v: 40, x: 130, y: 112, p: 60, c: 'normal' },
+            { v: 70, x: 350, y: 112, p: 60, c: 'normal' },
+            { v: 80, x: 405, y: 192, p: 70, c: 'normal' }
+          ]
+        }
+      ]
+    };
+
+    let activeCaseKey = 'caso1';
+    let caseStepIdx = 0;
+
+    function setCaseSim(key) {
+      activeCaseKey = key;
+      caseStepIdx = 0;
+      ['caso1', 'caso2', 'caso3'].forEach(k => {
+        const b = document.getElementById('cs-btn-' + k);
+        if (b) b.className = (k === key)
+          ? 'px-3.5 py-1.5 rounded-lg bg-cyan-600 text-white font-bold'
+          : 'px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 font-bold';
+      });
+      renderCaseSim();
+    }
+    function stepCaseSim(dir) {
+      const arr = caseScenarios[activeCaseKey];
+      caseStepIdx = Math.max(0, Math.min(arr.length - 1, caseStepIdx + dir));
+      renderCaseSim();
+    }
+    function resetCaseSim() { caseStepIdx = 0; renderCaseSim(); }
+    function renderCaseSim() {
+      const st = caseScenarios[activeCaseKey][caseStepIdx];
+      document.getElementById('case-sim-title').textContent = st.title;
+      document.getElementById('case-sim-desc').textContent = st.desc;
+      document.getElementById('case-sim-inorder').textContent = st.inorder;
+
+      const byVal = {};
+      st.nodes.forEach(n => { if (!n.id) byVal[n.v] = n; });
+      let html = '';
+      st.nodes.forEach(n => {
+        if (n.p !== null && byVal[n.p]) {
+          const pn = byVal[n.p];
+          html += `<line x1="${pn.x}" y1="${pn.y}" x2="${n.x}" y2="${n.y}" stroke="#475569" stroke-width="2.5"/>`;
+        }
+      });
+      st.nodes.forEach(n => {
+        let fill = '#1e293b', stroke = '#22d3ee';
+        if (n.c === 'target') { fill = '#881337'; stroke = '#fb7185'; }
+        if (n.c === 'succ') { fill = '#78350f'; stroke = '#fbbf24'; }
+        if (n.c === 'ok') { fill = '#065f46'; stroke = '#34d399'; }
+        html += `<circle cx="${n.x}" cy="${n.y}" r="22" fill="${fill}" stroke="${stroke}" stroke-width="2.5"/>
+                 <text x="${n.x}" y="${n.y + 5}" text-anchor="middle" fill="#fff" font-weight="bold" font-size="14">${n.v}</text>`;
+      });
+      document.getElementById('case-sim-svg').innerHTML = html;
+    }
+
+    // SIMULADOR 2: ELIMINADOR LIBRE EN BST (SVG INTERACTIVO)
+    let freeRoot = null;
+    function bstInsert(node, val) {
+      if (!node) return { val, izq: null, der: null };
+      if (val < node.val) node.izq = bstInsert(node.izq, val);
+      else if (val > node.val) node.der = bstInsert(node.der, val);
+      return node;
+    }
+    function bstMin(node) {
+      let curr = node;
+      while (curr.izq) curr = curr.izq;
+      return curr.val;
+    }
+    function bstDelete(node, val, info) {
+      if (!node) return null;
+      if (val < node.val) node.izq = bstDelete(node.izq, val, info);
+      else if (val > node.val) node.der = bstDelete(node.der, val, info);
+      else {
+        info.found = true;
+        if (!node.izq && !node.der) {
+          if (!info.caseLabel) info.caseLabel = `Caso 1 (Hoja): ${val} no tenía hijos y se reemplazó por null.`;
+          return null;
+        }
+        if (!node.izq) {
+          if (!info.caseLabel) info.caseLabel = `Caso 2 (1 Hijo): ${val} fue reemplazado por su hijo derecho (${node.der.val}).`;
+          return node.der;
+        }
+        if (!node.der) {
+          if (!info.caseLabel) info.caseLabel = `Caso 2 (1 Hijo): ${val} fue reemplazado por su hijo izquierdo (${node.izq.val}).`;
+          return node.izq;
+        }
+        const suc = bstMin(node.der);
+        info.caseLabel = `Caso 3 (2 Hijos): ${val} se reemplazó por su Sucesor Inorden (${suc}) y se eliminó el duplicado en el subárbol derecho.`;
+        node.val = suc;
+        node.der = bstDelete(node.der, suc, { found: false, caseLabel: '' });
+      }
+      return node;
+    }
+    function bstHeight(n) { return n ? 1 + Math.max(bstHeight(n.izq), bstHeight(n.der)) : 0; }
+    function bstCount(n) { return n ? 1 + bstCount(n.izq) + bstCount(n.der) : 0; }
+    function bstInorder(n, arr) { if (!n) return; bstInorder(n.izq, arr); arr.push(n.val); bstInorder(n.der, arr); }
+
+    function resetFreeBST() {
+      freeRoot = null;
+      [50, 30, 70, 20, 40, 60, 80, 35, 65].forEach(v => { freeRoot = bstInsert(freeRoot, v); });
+      document.getElementById('free-bst-log').textContent = 'Árbol inicial cargado con 9 nodos. Haz clic en cualquier nodo del diagrama para eliminarlo.';
+      renderFreeBST();
+    }
+    function deleteFreeNode(val) {
+      const info = { found: false, caseLabel: '' };
+      freeRoot = bstDelete(freeRoot, val, info);
+      document.getElementById('free-bst-log').textContent = info.found
+        ? info.caseLabel
+        : `El valor ${val} no existe en el BST actual.`;
+      renderFreeBST();
+    }
+    function deleteFromInput() {
+      const v = parseInt(document.getElementById('free-del-input').value, 10);
+      if (!isNaN(v)) deleteFreeNode(v);
+    }
+    function renderFreeBST() {
+      const svg = document.getElementById('free-bst-svg');
+      document.getElementById('free-bst-count').textContent = bstCount(freeRoot);
+      document.getElementById('free-bst-height').textContent = bstHeight(freeRoot);
+      const ino = [];
+      bstInorder(freeRoot, ino);
+      document.getElementById('free-bst-inorder').textContent = ino.length ? ino.join(' -> ') : '(vacío)';
+      if (!freeRoot) {
+        svg.innerHTML = `<text x="280" y="135" text-anchor="middle" fill="#64748b" font-size="16" font-family="Fira Code">Árbol vacío — pulsa Restaurar</text>`;
+        return;
+      }
+      const edges = [], nodes = [];
+      function layout(node, x, y, off, depth) {
+        if (!node || depth > 5) return;
+        nodes.push({ val: node.val, x, y });
+        const ny = y + 58;
+        const noff = Math.max(28, off / 2);
+        if (node.izq) { edges.push({ x1: x, y1: y, x2: x - off, y2: ny }); layout(node.izq, x - off, ny, noff, depth + 1); }
+        if (node.der) { edges.push({ x1: x, y1: y, x2: x + off, y2: ny }); layout(node.der, x + off, ny, noff, depth + 1); }
+      }
+      layout(freeRoot, 280, 32, 130, 1);
+      let html = '';
+      edges.forEach(e => { html += `<line x1="${e.x1}" y1="${e.y1}" x2="${e.x2}" y2="${e.y2}" stroke="#475569" stroke-width="2.5"/>`; });
+      nodes.forEach(n => {
+        html += `<g class="tree-node" onclick="deleteFreeNode(${n.val})">
+          <circle cx="${n.x}" cy="${n.y}" r="19" fill="#1e293b" stroke="#22d3ee" stroke-width="2.5"/>
+          <text x="${n.x}" y="${n.y + 5}" text-anchor="middle" fill="#fff" font-weight="bold" font-size="13">${n.val}</text>
+        </g>`;
+      });
+      svg.innerHTML = html;
+    }
+
+    // SIMULADOR 3: DEGRADACIÓN VS BALANCEO Y ROTACIÓN SIMPLE
+    function setBalanceView(mode) {
+      ['degenerado', 'balanceado', 'rotacion'].forEach(k => {
+        const b = document.getElementById('bal-btn-' + k);
+        if (b) b.className = (k === mode)
+          ? (k === 'degenerado' ? 'px-3.5 py-1.5 rounded-lg bg-rose-600 text-white font-bold' : 'px-3.5 py-1.5 rounded-lg bg-emerald-600 text-white font-bold')
+          : 'px-3.5 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 font-bold';
+      });
+      const svg = document.getElementById('balance-svg');
+      const status = document.getElementById('bal-status');
+      const metrics = document.getElementById('bal-metrics');
+      const explain = document.getElementById('bal-explain');
+
+      if (mode === 'degenerado') {
+        svg.innerHTML = `
+          <line x1="110" y1="35" x2="185" y2="82" stroke="#fb7185" stroke-width="2.5"/>
+          <line x1="185" y1="82" x2="260" y2="129" stroke="#fb7185" stroke-width="2.5"/>
+          <line x1="260" y1="129" x2="335" y2="176" stroke="#fb7185" stroke-width="2.5"/>
+          <line x1="335" y1="176" x2="410" y2="220" stroke="#fb7185" stroke-width="2.5"/>
+          <circle cx="110" cy="35" r="20" fill="#881337" stroke="#fb7185" stroke-width="2.5"/><text x="110" y="40" text-anchor="middle" fill="#fff" font-weight="bold">10</text><text x="62" y="40" fill="#fda4af" font-size="11" font-family="Fira Code">FE=-4</text>
+          <circle cx="185" cy="82" r="20" fill="#881337" stroke="#fb7185" stroke-width="2.5"/><text x="185" y="87" text-anchor="middle" fill="#fff" font-weight="bold">20</text><text x="137" y="87" fill="#fda4af" font-size="11" font-family="Fira Code">FE=-3</text>
+          <circle cx="260" cy="129" r="20" fill="#881337" stroke="#fb7185" stroke-width="2.5"/><text x="260" y="134" text-anchor="middle" fill="#fff" font-weight="bold">30</text><text x="212" y="134" fill="#fda4af" font-size="11" font-family="Fira Code">FE=-2</text>
+          <circle cx="335" cy="176" r="20" fill="#1e293b" stroke="#64748b" stroke-width="2"/><text x="335" y="181" text-anchor="middle" fill="#fff" font-weight="bold">40</text>
+          <circle cx="410" cy="220" r="20" fill="#1e293b" stroke="#64748b" stroke-width="2"/><text x="410" y="225" text-anchor="middle" fill="#fff" font-weight="bold">50</text>
+        `;
+        status.className = 'p-3.5 rounded-xl border bg-rose-950/50 border-rose-600 text-rose-200 font-bold text-base';
+        status.textContent = '✗ BST Degenerado (Secuencia 10, 20, 30, 40, 50)';
+        metrics.innerHTML = '<div>Altura: <strong class="text-rose-300">5</strong> | FE raíz: <strong class="text-rose-300">-4</strong></div><div>Búsqueda de 50: <strong class="text-rose-300">5 comparaciones O(n)</strong></div>';
+        explain.textContent = 'Al insertar claves ya ordenadas, todos los enlaces caen a la derecha y se pierde la ventaja dicotómica.';
+      } else if (mode === 'balanceado') {
+        svg.innerHTML = `
+          <line x1="270" y1="42" x2="155" y2="118" stroke="#34d399" stroke-width="2.5"/>
+          <line x1="270" y1="42" x2="385" y2="118" stroke="#34d399" stroke-width="2.5"/>
+          <line x1="155" y1="118" x2="95" y2="198" stroke="#34d399" stroke-width="2.5"/>
+          <line x1="385" y1="118" x2="445" y2="198" stroke="#34d399" stroke-width="2.5"/>
+          <circle cx="270" cy="42" r="22" fill="#065f46" stroke="#34d399" stroke-width="2.5"/><text x="270" y="47" text-anchor="middle" fill="#fff" font-weight="bold">30</text><text x="305" y="46" fill="#6ee7b7" font-size="11" font-family="Fira Code">FE=0</text>
+          <circle cx="155" cy="118" r="22" fill="#064e3b" stroke="#34d399" stroke-width="2"/><text x="155" y="123" text-anchor="middle" fill="#fff" font-weight="bold">20</text><text x="95" y="122" fill="#6ee7b7" font-size="11" font-family="Fira Code">FE=+1</text>
+          <circle cx="385" cy="118" r="22" fill="#064e3b" stroke="#34d399" stroke-width="2"/><text x="385" y="123" text-anchor="middle" fill="#fff" font-weight="bold">40</text><text x="415" y="122" fill="#6ee7b7" font-size="11" font-family="Fira Code">FE=-1</text>
+          <circle cx="95" cy="198" r="22" fill="#1e293b" stroke="#22d3ee" stroke-width="2"/><text x="95" y="203" text-anchor="middle" fill="#fff" font-weight="bold">10</text>
+          <circle cx="445" cy="198" r="22" fill="#1e293b" stroke="#22d3ee" stroke-width="2"/><text x="445" y="203" text-anchor="middle" fill="#fff" font-weight="bold">50</text>
+        `;
+        status.className = 'p-3.5 rounded-xl border bg-emerald-950/50 border-emerald-600 text-emerald-200 font-bold text-base';
+        status.textContent = '✓ BST Balanceado (Mismos 5 valores: 30, 20, 40, 10, 50)';
+        metrics.innerHTML = '<div>Altura: <strong class="text-emerald-300">3</strong> | FE en todos: <strong class="text-emerald-300">{-1, 0, +1}</strong></div><div>Búsqueda de 50: <strong class="text-emerald-300">3 comparaciones O(log n)</strong></div>';
+        explain.textContent = 'Todos los factores de equilibrio están dentro del rango [-1, +1]. El árbol se mantiene compacto y rápido.';
+      } else {
+        svg.innerHTML = `
+          <text x="115" y="26" text-anchor="middle" fill="#fda4af" font-size="12" font-weight="bold">ANTES (FE raíz = -2)</text>
+          <line x1="70" y1="62" x2="120" y2="122" stroke="#fb7185" stroke-width="2.5"/>
+          <line x1="120" y1="122" x2="170" y2="182" stroke="#fb7185" stroke-width="2.5"/>
+          <circle cx="70" cy="62" r="20" fill="#881337" stroke="#fb7185" stroke-width="2.5"/><text x="70" y="67" text-anchor="middle" fill="#fff" font-weight="bold">10</text>
+          <circle cx="120" cy="122" r="20" fill="#78350f" stroke="#fbbf24" stroke-width="2.5"/><text x="120" y="127" text-anchor="middle" fill="#fff" font-weight="bold">20</text>
+          <circle cx="170" cy="182" r="20" fill="#1e293b" stroke="#22d3ee" stroke-width="2"/><text x="170" y="187" text-anchor="middle" fill="#fff" font-weight="bold">30</text>
+
+          <text x="270" y="125" text-anchor="middle" fill="#34d399" font-size="14" font-weight="bold">Rotación Izq ➔</text>
+
+          <text x="415" y="26" text-anchor="middle" fill="#6ee7b7" font-size="12" font-weight="bold">DESPUÉS (FE raíz = 0)</text>
+          <line x1="415" y1="75" x2="355" y2="155" stroke="#34d399" stroke-width="2.5"/>
+          <line x1="415" y1="75" x2="475" y2="155" stroke="#34d399" stroke-width="2.5"/>
+          <circle cx="415" cy="75" r="22" fill="#065f46" stroke="#34d399" stroke-width="2.5"/><text x="415" y="80" text-anchor="middle" fill="#fff" font-weight="bold">20</text>
+          <circle cx="355" cy="155" r="20" fill="#1e293b" stroke="#22d3ee" stroke-width="2"/><text x="355" y="160" text-anchor="middle" fill="#fff" font-weight="bold">10</text>
+          <circle cx="475" cy="155" r="20" fill="#1e293b" stroke="#22d3ee" stroke-width="2"/><text x="475" y="160" text-anchor="middle" fill="#fff" font-weight="bold">30</text>
+        `;
+        status.className = 'p-3.5 rounded-xl border bg-cyan-950/50 border-cyan-600 text-cyan-200 font-bold text-base';
+        status.textContent = '⚡ Rotación Simple a la Izquierda (Principio AVL)';
+        metrics.innerHTML = '<div>Altura antes: <strong class="text-rose-300">3</strong> ➔ Altura después: <strong class="text-emerald-300">2</strong></div><div>Inorden antes y después: <strong class="text-emerald-300">10 -> 20 -> 30</strong></div>';
+        explain.textContent = 'El nodo 20 sube a ser la nueva raíz y 10 baja como su hijo izquierdo. El orden BST se conserva al 100% y la altura baja.';
+      }
+    }
+
+    // GLOSARIO INTERACTIVO
+    function focusGlossary(unit, term, def) {
+      const box = document.getElementById('glos-focus-' + unit);
+      if (!box) return;
+      const color = unit === 'u1' ? 'text-cyan-300' : 'text-sky-300';
+      box.innerHTML = `<span class="font-mono font-black ${color} text-lg">${term}:</span> <span>${def}</span>`;
+    }
+
+    // BANCO 20 PREGUNTAS — RESPUESTAS BALANCEADAS EN A(5), B(5), C(5), D(5)
+    const questions = [
+      { q: "¿Cuál es la regla principal que debe cumplirse después de eliminar cualquier nodo de un BST?", options: ["A) El árbol debe quedar sin hojas.", "B) La raíz debe ser siempre el número más pequeño.", "C) El árbol resultante debe seguir cumpliendo la propiedad de orden BST (izquierdo < raíz < derecho).", "D) Todos los nodos deben pasar al subárbol izquierdo."], correct: 2, exp: "Toda operación de eliminación debe preservar la invariante de orden BST (Inorden ordenado)." },
+      { q: "En el Caso 1 (eliminar un nodo hoja), ¿qué valor retorna `eliminarRecursivo()` al padre?", options: ["A) null", "B) La raíz completa", "C) El doble del dato", "D) Una excepción"], correct: 0, exp: "Una hoja no tiene hijos; retornar null desconecta limpiamente el enlace del padre." },
+      { q: "¿Qué acción realiza el algoritmo en el Caso 2 (eliminar un nodo que tiene exactamente un hijo)?", options: ["A) Borra también a todo su subárbol descendiente.", "B) Intercambia el nodo con la raíz del árbol.", "C) Deja el enlace en null sin reconectar al hijo.", "D) Hace un puente directo devolviendo el único hijo para que el padre lo adopte."], correct: 3, exp: "El hijo único ocupa la posición del nodo eliminado sin romper la propiedad BST." },
+      { q: "¿Quién es el Sucesor Inorden de un nodo que tiene dos hijos en un BST?", options: ["A) El valor más grande de todo el árbol.", "B) El valor más pequeño del subárbol derecho (un paso a la derecha y todo a la izquierda).", "C) El hijo izquierdo directo del nodo.", "D) Siempre el padre del nodo."], correct: 1, exp: "El mínimo del subárbol derecho es la clave inmediatamente mayor al nodo a eliminar." },
+      { q: "En el BST `{50, 30, 70, 20, 40, 60, 80}`, si eliminamos la raíz `50`, ¿qué valor toma su lugar usando el Sucesor Inorden?", options: ["A) 60", "B) 20", "C) 80", "D) 70"], correct: 0, exp: "Entramos al subárbol derecho de 50 (70) y bajamos a la izquierda: el mínimo es 60." },
+      { q: "¿Por qué al eliminar el duplicado del Sucesor Inorden en el Paso 3 nunca vuelve a caer en Caso 3?", options: ["A) Porque el árbol se vacía por completo.", "B) Porque el sucesor siempre es mayor que todos los nodos.", "C) Porque al ser el mínimo del subárbol derecho, el sucesor jamás tiene hijo izquierdo (será Caso 1 o Caso 2).", "D) Porque Java detiene la recursión tras 2 pasos."], correct: 2, exp: "Si tuviera hijo izquierdo, ese hijo sería aún menor y el nodo no sería el mínimo." },
+      { q: "¿Cuál es la alternativa simétrica válida al Sucesor Inorden en el Caso 3?", options: ["A) Cualquier hoja elegida al azar.", "B) El nodo mínimo de todo el árbol.", "C) El nodo máximo del subárbol derecho.", "D) El Predecesor Inorden (valor más grande del subárbol izquierdo)."], correct: 3, exp: "El mayor valor del subárbol izquierdo también respeta ser mayor que la izquierda y menor que la derecha." },
+      { q: "Si `actual` tiene ambos hijos y copiamos `actual.dato = sucesor`, ¿cuál es el paso obligatorio inmediatamente siguiente?", options: ["A) Borrar el subárbol izquierdo completo.", "B) Eliminar el valor repetido `sucesor` dentro de `actual.derecho`.", "C) Cambiar `raiz = null`.", "D) Insertar nuevamente el valor antiguo."], correct: 1, exp: "Si no eliminamos el duplicado en actual.derecho, la clave quedaría repetida en el BST." },
+      { q: "¿Qué sucede con el recorrido Inorden tras eliminar el nodo `30` de `{20, 30, 40, 50, 60, 70, 80}`?", options: ["A) Queda desordenado al revés.", "B) Se pierden también 20 y 40.", "C) Sigue ordenado ascendentemente sin el 30: 20 -> 40 -> 50 -> 60 -> 70 -> 80.", "D) Solo imprime la raíz."], correct: 2, exp: "Un borrado correcto únicamente remueve la clave solicitada conservando el orden del resto." },
+      { q: "¿Qué ocurre en `eliminarRecursivo()` si se solicita borrar un número que NO existe en el BST?", options: ["A) Llega al caso base `actual == null`, retorna `null` y el árbol queda sin cambios.", "B) Elimina la raíz por defecto.", "C) Lanza una excepción obligatoria.", "D) Inserta el número al final."], correct: 0, exp: "El caso base actual == null detiene el descenso de forma segura cuando la clave no está." },
+      { q: "¿Cuál es el efecto principal de la degradación de un BST al insertar secuencias ya ordenadas?", options: ["A) La altura se reduce a 1.", "B) Las búsquedas pasan a O(1).", "C) El árbol duplica sus nodos automáticamente.", "D) El árbol se inclina como una cadena lineal de altura n y las búsquedas empeoran a O(n)."], correct: 3, exp: "Sin ramificación equilibrada, la altura crece linealmente con n y se pierde la búsqueda dicotómica." },
+      { q: "¿Cómo se define el Factor de Equilibrio (FE) de un nodo en un árbol binario?", options: ["A) suma de claves izquierdas menos derechas", "B) altura(subárbol izquierdo) - altura(subárbol derecho)", "C) número total de hojas dividido para 2", "D) dato de la raíz multiplicado por 2"], correct: 1, exp: "El factor de equilibrio compara las alturas de los subárboles izquierdo y derecho." },
+      { q: "¿Qué valores de Factor de Equilibrio (FE) se permiten en todos los nodos de un árbol balanceado tipo AVL?", options: ["A) -1, 0 o +1", "B) Únicamente 0", "C) Cualquier número negativo", "D) Entre -5 y +5"], correct: 0, exp: "Un árbol está equilibrado en altura cuando |altura(izq) - altura(der)| <= 1 en todo nodo." },
+      { q: "¿Qué logra una Rotación Simple a la Izquierda sobre la cadena desequilibrada `10 -> 20 -> 30`?", options: ["A) Elimina el nodo 20 del árbol.", "B) Invierte el orden a 30 -> 20 -> 10.", "C) Sube a 20 como raíz con hijos 10 (izq) y 30 (der), bajando la altura de 3 a 2 sin perder el orden BST.", "D) Convierte el árbol en una lista enlazada."], correct: 2, exp: "La rotación reequilibra localmente reduciendo la altura mientras mantiene Inorden: 10 -> 20 -> 30." },
+      { q: "En Java, ¿qué retorna `encontrarMinimo(NodoBST nodo)` al recibir `actual.derecho`?", options: ["A) El nodo raíz del árbol entero.", "B) El entero más pequeño alcanzable bajando siempre por `izquierdo` dentro de ese subárbol.", "C) La suma de todos los nodos derechos.", "D) Siempre el valor 0."], correct: 1, exp: "El ciclo while (actual.izquierdo != null) llega exactamente al menor valor del subárbol derecho." },
+      { q: "[Glosario] ¿Qué describe exactamente el principio LIFO utilizado en un Stack (Pila)?", options: ["A) El primer elemento en entrar es el primero en salir.", "B) Los elementos salen siempre ordenados de menor a mayor.", "C) Se puede retirar cualquier elemento por su índice numérico.", "D) El último elemento en entrar es el primero en salir."], correct: 3, exp: "LIFO significa Last-In, First-Out: en una pila, el último en apilarse (push) es el primero en salir (pop)." },
+      { q: "[Glosario] ¿Qué estructura utiliza el algoritmo de recorrido en amplitud BFS para explorar un grafo nivel por nivel?", options: ["A) Una Cola (Queue bajo principio FIFO).", "B) Un arreglo fijo sin índices.", "C) Únicamente un nodo hoja.", "D) Una matriz de ceros."], correct: 0, exp: "BFS visita primero todos los vecinos inmediatos procesándolos en el orden de llegada mediante una Cola (FIFO)." },
+      { q: "[Glosario] ¿Cuál es la principal diferencia entre un Array estático y una Lista Enlazada?", options: ["A) El Array no puede guardar números enteros.", "B) La Lista Enlazada no utiliza nodos.", "C) El Array tiene tamaño fijo con acceso por índice, mientras la Lista Enlazada crece dinámicamente enlazando nodos.", "D) Ambos tienen exactamente la misma estructura y tamaño fijo."], correct: 2, exp: "Un Array reserva un tamaño fijo indexado; una Lista Enlazada conecta nodos dinámicamente mediante referencias." },
+      { q: "[Glosario] ¿Qué representa la sigla TDA en Estructuras de Datos?", options: ["A) Tabla Dinámica Automática.", "B) Tiempo de Acceso Directo.", "C) Transmisión de Datos Asincrónica.", "D) Tipo de Dato Abstracto: modelo lógico de datos y operaciones independiente de su código interno."], correct: 3, exp: "Un TDA define qué almacena la estructura y qué operaciones ofrece (ej. Pila, Cola, Lista), sin atarse a una única implementación." },
+      { q: "[Glosario] ¿En qué se diferencia una Lista de Adyacencia de una Matriz de Adyacencia al representar un grafo?", options: ["A) La Lista de Adyacencia solo sirve para árboles binarios.", "B) La Lista guarda solo los vecinos existentes de cada vértice, mientras la Matriz reserva una tabla completa V × V.", "C) La Matriz no puede guardar grafos ponderados.", "D) Son dos nombres distintos para el mismo arreglo lineal."], correct: 1, exp: "En grafos con pocas aristas, la Lista de Adyacencia ahorra espacio porque solo almacena las conexiones reales de cada vértice." }
+    ];
+
+    let currentQuizIndex = 0;
+    const userQuizAnswers = {};
+    let score = 0;
+
+    function renderQuizPills() {
+      const container = document.getElementById('quiz-pills');
+      if (!container) return;
+      container.innerHTML = '';
+      questions.forEach((q, idx) => {
+        const btn = document.createElement('button');
+        const isCurrent = (idx === currentQuizIndex);
+        const ans = userQuizAnswers[idx];
+        let bgClass = 'bg-slate-900 text-slate-400 border-slate-800';
+        if (ans !== undefined) bgClass = (ans === q.correct) ? 'bg-emerald-950 border-emerald-600 text-emerald-300 font-bold' : 'bg-rose-950 border-rose-600 text-rose-300 font-bold';
+        const ringClass = isCurrent ? 'ring-2 ring-cyan-400 scale-105 font-black text-white' : 'hover:border-slate-600';
+        btn.className = `w-8 h-8 sm:w-9 sm:h-9 rounded-lg border text-xs sm:text-sm font-mono transition flex items-center justify-center shrink-0 ${bgClass} ${ringClass}`;
+        btn.textContent = idx + 1;
+        btn.onclick = () => loadQuizQuestion(idx);
+        container.appendChild(btn);
+      });
+    }
+
+    function loadQuizQuestion(idx) {
+      if (idx < 0) idx = 0;
+      if (idx >= questions.length) idx = questions.length - 1;
+      currentQuizIndex = idx;
+      renderQuizPills();
+      const q = questions[idx];
+      document.getElementById('quiz-question-number').textContent = idx + 1;
+      document.getElementById('quiz-question-text').textContent = q.q;
+      document.getElementById('btn-quiz-next-text').textContent = (idx === questions.length - 1) ? 'Ver Resultados' : 'Siguiente';
+      document.getElementById('btn-quiz-prev').disabled = (idx === 0);
+
+      const optContainer = document.getElementById('quiz-options-container');
+      optContainer.innerHTML = '';
+      const feedbackBox = document.getElementById('quiz-feedback-box');
+      feedbackBox.classList.add('hidden');
+      const existingAns = userQuizAnswers[idx];
+
+      q.options.forEach((optText, optIdx) => {
+        const btn = document.createElement('button');
+        const letter = ['A', 'B', 'C', 'D'][optIdx];
+        const isSelected = (existingAns === optIdx);
+        const isCorrect = (optIdx === q.correct);
+        let optClass = 'bg-slate-950 hover:bg-slate-800 border-slate-800 text-slate-300 hover:text-white';
+        if (existingAns !== undefined) {
+          if (isSelected) optClass = isCorrect ? 'bg-emerald-950/80 border-emerald-500 text-emerald-200 ring-1 ring-emerald-400' : 'bg-rose-950/80 border-rose-500 text-rose-200 ring-1 ring-rose-400';
+          else if (isCorrect) optClass = 'bg-emerald-950/40 border-emerald-600 text-emerald-300';
+          else optClass = 'bg-slate-950 border-slate-900 text-slate-600 opacity-60';
+        }
+        btn.className = `w-full text-left p-4 rounded-xl border transition text-base sm:text-lg flex items-center justify-between shadow-sm cursor-pointer ${optClass}`;
+        btn.innerHTML = `<div class="flex items-center space-x-3"><span class="w-8 h-8 rounded-lg bg-slate-900 border border-slate-700 text-cyan-400 font-bold text-sm flex items-center justify-center shrink-0">${letter}</span><span>${optText.replace(/^[A-D]\)\s*/, '')}</span></div><span class="text-base font-bold ml-2">${existingAns !== undefined ? (isCorrect ? '✓' : (isSelected ? '✗' : '')) : ''}</span>`;
+        if (existingAns === undefined) btn.onclick = () => selectSingleQuizOption(optIdx);
+        optContainer.appendChild(btn);
+      });
+
+      if (existingAns !== undefined) {
+        feedbackBox.classList.remove('hidden');
+        const isCorrect = (existingAns === q.correct);
+        feedbackBox.className = isCorrect ? 'p-4 rounded-xl text-sm sm:text-base leading-relaxed bg-emerald-950/40 border border-emerald-700/80 text-emerald-200' : 'p-4 rounded-xl text-sm sm:text-base leading-relaxed bg-rose-950/40 border border-rose-700/80 text-rose-200';
+        feedbackBox.innerHTML = `<div class="font-bold mb-1 ${isCorrect ? 'text-emerald-400' : 'text-rose-400'}">${isCorrect ? '✓ ¡Respuesta Correcta!' : '✗ Respuesta Incorrecta'}</div><div><strong>Justificación Técnica:</strong> ${q.exp}</div>`;
+      }
+      updateQuizScoreDisplay();
+    }
+
+    function selectSingleQuizOption(optIdx) {
+      if (userQuizAnswers[currentQuizIndex] !== undefined) return;
+      userQuizAnswers[currentQuizIndex] = optIdx;
+      if (optIdx === questions[currentQuizIndex].correct) confetti({ particleCount: 25, spread: 50, origin: { y: 0.7 } });
+      loadQuizQuestion(currentQuizIndex);
+    }
+
+    function navQuizQuestion(dir) {
+      const nextIdx = currentQuizIndex + dir;
+      if (nextIdx >= questions.length) { updateFinalResults(); showSlide(25); }
+      else if (nextIdx >= 0) loadQuizQuestion(nextIdx);
+    }
+
+    function updateQuizScoreDisplay() {
+      let currentScore = 0;
+      Object.keys(userQuizAnswers).forEach(idx => { if (userQuizAnswers[idx] === questions[idx].correct) currentScore++; });
+      score = currentScore;
+      const badge = document.getElementById('quiz-score-badge');
+      if (badge) badge.textContent = score;
+    }
+
+    function updateFinalResults() {
+      updateQuizScoreDisplay();
+      const pct = Math.round((score / questions.length) * 100);
+      document.getElementById('final-score-display').textContent = `${score} / ${questions.length}`;
+      document.getElementById('final-percentage-badge').textContent = `${pct}% de Efectividad`;
+      const msg = document.getElementById('final-eval-msg');
+      if (score === 20) { msg.innerHTML = '<strong class="text-emerald-400">¡Excelente!</strong> Dominas la eliminación en BST, balanceo y todo el glosario técnico de Clases 1–12.'; confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } }); }
+      else if (score >= 14) { msg.innerHTML = '<strong class="text-cyan-400">¡Muy Buen Desempeño!</strong> Comprendes la reconexión de enlaces, el equilibrio y los términos base.'; confetti({ particleCount: 60, spread: 60, origin: { y: 0.6 } }); }
+      else { msg.innerHTML = '<strong class="text-amber-400">Evaluación Concluida.</strong> Repasa el glosario técnico y los 3 simuladores interactivos de borrado y rotación.'; }
+    }
+
+    function resetFullQuiz() {
+      Object.keys(userQuizAnswers).forEach(k => delete userQuizAnswers[k]);
+      score = 0;
+      currentQuizIndex = 0;
+      loadQuizQuestion(0);
+      showSlide(24);
+    }
+
+    setCaseSim('caso1');
+    resetFreeBST();
+    setBalanceView('degenerado');
+    loadQuizQuestion(0);
+    showSlide(0);
+  </script>
+</body>
+</html>
